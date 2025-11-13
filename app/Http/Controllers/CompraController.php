@@ -43,12 +43,13 @@ class CompraController extends Controller
             'metodo_pago' => 'required|in:tarjeta,paypal,transferencia,yape',
         ]);
 
-        // Crear registro de compra
+        $precio = $libro->precio_compra_fisica ?? 99.90;
+
         $compra = Compra::create([
             'usuario_id' => Auth::id(),
             'libro_id' => $libro->id,
             'tipo' => 'fisico',
-            'precio' => $libro->precio ?? 99.90,
+            'precio' => $precio,
             'estado' => 'completada',
             'datos_envio' => json_encode([
                 'nombre' => $request->nombre,
@@ -62,7 +63,6 @@ class CompraController extends Controller
             ]),
         ]);
 
-        // Reducir stock si existe
         if ($libro->stock > 0) {
             $libro->decrement('stock');
         }
@@ -81,16 +81,17 @@ class CompraController extends Controller
         ]);
 
         // Verificar que el libro tiene PDF
-        if (!$libro->pdf_file) {
+        if (!$libro->archivo_pdf) {
             return back()->with('error', 'Este libro no tiene versión digital disponible.');
         }
 
-        // Crear registro de compra
+        $precio = $libro->precio_compra_online ?? 69.90;
+
         $compra = Compra::create([
             'usuario_id' => Auth::id(),
             'libro_id' => $libro->id,
             'tipo' => 'virtual',
-            'precio' => $libro->precio_virtual ?? 69.90,
+            'precio' => $precio,
             'estado' => 'completada',
             'datos_envio' => json_encode([
                 'metodo_pago' => $request->metodo_pago,
@@ -173,11 +174,11 @@ class CompraController extends Controller
 
         $libro = $compra->libro;
         
-        if (!$libro->pdf_file || !Storage::disk('public')->exists($libro->pdf_file)) {
+        if (!$libro->archivo_pdf || !Storage::disk('public')->exists($libro->archivo_pdf)) {
             return back()->with('error', 'El archivo PDF no está disponible.');
         }
 
-        return Storage::disk('public')->download($libro->pdf_file, $libro->titulo . '.pdf');
+        return Storage::disk('public')->download($libro->archivo_pdf, $libro->titulo . '.pdf');
     }
 
     /**
@@ -221,5 +222,45 @@ class CompraController extends Controller
             ->paginate(10);
 
         return view('user.historial', compact('compras', 'prestamos'));
+    }
+
+    public function userPurchases()
+    {
+        $compras = Compra::where('usuario_id', Auth::id())->with('libro.autor', 'libro.categoria')->latest()->get();
+        return view('user.purchases', compact('compras'));
+    }
+
+    /**
+     * Listar todas las compras (admin)
+     */
+    public function index(Request $request)
+    {
+        $query = Compra::with(['usuario', 'libro', 'libro.autor']);
+
+        // Filtros
+        if ($request->filled('usuario')) {
+            $query->whereHas('usuario', function($q) use ($request) {
+                $q->where('nombre', 'like', '%' . $request->usuario . '%')
+                  ->orWhere('apellido', 'like', '%' . $request->usuario . '%')
+                  ->orWhere('email', 'like', '%' . $request->usuario . '%');
+            });
+        }
+        if ($request->filled('libro')) {
+            $query->whereHas('libro', function($q) use ($request) {
+                $q->where('titulo', 'like', '%' . $request->libro . '%');
+            });
+        }
+        if ($request->filled('modalidad')) {
+            $query->where('tipo', $request->modalidad);
+        }
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+        if ($request->filled('fecha')) {
+            $query->whereDate('created_at', $request->fecha);
+        }
+
+        $compras = $query->orderBy('created_at', 'desc')->paginate(20);
+        return view('admin.compras.index', compact('compras'));
     }
 } 

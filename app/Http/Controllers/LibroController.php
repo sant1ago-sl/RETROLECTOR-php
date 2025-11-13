@@ -5,27 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Libro;
 use App\Models\Autor;
 use App\Models\Categoria;
+use App\Models\Favorito;
+use App\Models\Resena;
+use App\Models\Prestamo;
+use App\Models\Reserva;
+use App\Models\Compra;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class LibroController extends Controller
 {
     /**
-     * Mostrar catálogo de libros
+     * Mostrar catálogo de libros con filtros avanzados
      */
     public function catalog(Request $request)
     {
-        $query = Libro::with(['autor', 'categoria']);
+        $query = Libro::with(['autor', 'categoria', 'resenas'])
+            ->where('estado', 'disponible');
 
-        // Búsqueda por texto
+        // Filtros de búsqueda
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('titulo', 'like', "%{$search}%")
-                  ->orWhere('isbn', 'like', "%{$search}%")
                   ->orWhere('sinopsis', 'like', "%{$search}%")
+                  ->orWhere('isbn', 'like', "%{$search}%")
                   ->orWhereHas('autor', function($q) use ($search) {
                       $q->where('nombre', 'like', "%{$search}%")
-                        ->orWhere('apellido', 'like', "%{$search}%");
+                        ->orWhere('apellido', 'like', "%{$search}%")
+                        ->orWhere(DB::raw("CONCAT(nombre, ' ', apellido)"), 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('categoria', function($q) use ($search) {
+                      $q->where('nombre', 'like', "%{$search}%");
                   });
             });
         }
@@ -35,280 +48,876 @@ class LibroController extends Controller
             $query->where('categoria_id', $request->categoria);
         }
 
-        // Filtro por estado
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
+        // Filtro por autor
+        if ($request->filled('autor')) {
+            $query->where('autor_id', $request->autor);
+        }
+
+        // Filtro por año de publicación
+        if ($request->filled('anio')) {
+            $query->whereYear('anio_publicacion', $request->anio);
+        }
+
+        // Filtro por idioma
+        if ($request->filled('idioma')) {
+            $query->where('idioma', $request->idioma);
+        }
+        
+        // Eliminar toda referencia a 'tipo' en consultas a la tabla libros
+        
+        // Filtro por precio
+        if ($request->filled('precio_min')) {
+            $query->where('precio', '>=', $request->precio_min);
+        }
+        if ($request->filled('precio_max')) {
+            $query->where('precio', '<=', $request->precio_max);
         }
 
         // Ordenamiento
-        switch ($request->get('orden', 'titulo')) {
-            case 'autor':
-                $query->join('autores', 'libros.autor_id', '=', 'autores.id')
-                      ->orderBy('autores.nombre')
-                      ->orderBy('autores.apellido');
+        $orden = $request->get('orden', 'titulo');
+        $direccion = $request->get('direccion', 'asc');
+        
+        switch ($orden) {
+            case 'anio_publicacion':
+                $query->orderBy('anio_publicacion', $direccion);
                 break;
-            case 'fecha':
-                $query->orderBy('anio_publicacion', 'desc');
+            case 'precio':
+                $query->orderBy('precio', $direccion);
                 break;
             case 'popularidad':
-                $query->withCount('prestamos')
-                      ->orderBy('prestamos_count', 'desc');
+                $query->withCount('prestamos')->orderBy('prestamos_count', $direccion);
                 break;
             default:
-                $query->orderBy('titulo');
-                break;
+                $query->orderBy('titulo', $direccion);
         }
-
-        $libros = $query->paginate(12);
-
-        // Estadísticas
-        $totalLibros = Libro::count();
-        $disponibles = Libro::where('estado', 'disponible')->count();
-        $prestados = Libro::where('estado', 'prestado')->count();
-        $reservados = Libro::where('estado', 'reservado')->count();
-
-        // Categorías para el filtro
-        $categorias = Categoria::where('estado', 'activa')->get();
-
-        return view('books.catalog', compact('libros', 'categorias', 'totalLibros', 'disponibles', 'prestados', 'reservados'));
+        
+        // Vista (grid o lista)
+        $vista = $request->get('vista', 'grid');
+        
+        // Paginación
+        $per_page = $request->get('per_page', 12);
+        $libros = $query->paginate($per_page);
+        
+        // Datos para filtros
+        $categorias = Categoria::orderBy('nombre')->get();
+        $autores = Autor::orderBy('nombre')->get();
+        $anios = Libro::distinct()->pluck(DB::raw('YEAR(anio_publicacion)'))->sort()->reverse();
+        $idiomas = Libro::distinct()->pluck('idioma')->filter()->sort();
+        
+        // Libros populares para sidebar
+        $libros_populares = Libro::with(['autor', 'categoria'])
+            ->withCount('prestamos')
+            ->orderBy('prestamos_count', 'desc')
+            ->limit(5)
+            ->get();
+        
+        // Libros recientes
+        $libros_recientes = Libro::with(['autor', 'categoria'])
+            ->orderBy('anio_publicacion', 'desc')
+            ->limit(5)
+            ->get();
+        
+        // Estadísticas del catálogo
+        $stats = [
+            'total_libros' => Libro::where('estado', 'disponible')->count(),
+            'total_categorias' => Categoria::count(),
+            'total_autores' => Autor::count(),
+            'libros_disponibles' => Libro::where('estado', 'disponible')->count()
+        ];
+        
+        return view('books.catalog', compact(
+            'libros',
+            'categorias',
+            'autores',
+            'anios',
+            'idiomas',
+            'libros_populares',
+            'libros_recientes',
+            'stats',
+            'vista'
+        ));
     }
 
     /**
-     * Mostrar detalles de un libro
+     * Mostrar libro específico
      */
-    public function show(Libro $libro)
+    public function show($id)
     {
-        $libro->load(['autor', 'categoria']);
+        $libro = Libro::with(['autor', 'categoria', 'resenas.usuario'])
+            ->findOrFail($id);
         
-        // Agregar libro a la lista de vistos recientemente
-        $this->agregarLibroVisto($libro->id);
+        // Incrementar vistas
+        $libro->increment('vistas');
         
-        // Verificar si el usuario tiene este libro en favoritos
-        $isFavorite = false;
-        if (auth()->check()) {
-            $isFavorite = auth()->user()->favoritos()->where('libro_id', $libro->id)->exists();
+        // Verificar si el usuario está autenticado
+        $user = Auth::user();
+        $es_favorito = false;
+        $tiene_resena = false;
+        $resena_usuario = null;
+        $prestamo_activo = null;
+        $reserva_activa = null;
+        
+        if ($user) {
+            // Verificar si está en favoritos
+            $es_favorito = Favorito::where('usuario_id', $user->id)
+                ->where('libro_id', $libro->id)
+                ->exists();
+            
+            // Verificar si tiene reseña
+            $resena_usuario = Resena::where('usuario_id', $user->id)
+                ->where('libro_id', $libro->id)
+                ->first();
+            $tiene_resena = $resena_usuario !== null;
+            
+            // Verificar préstamo activo
+            $prestamo_activo = Prestamo::where('usuario_id', $user->id)
+                ->where('libro_id', $libro->id)
+                ->where('estado', 'prestado')
+                ->first();
+            
+            // Verificar reserva activa
+            $reserva_activa = Reserva::where('usuario_id', $user->id)
+                ->where('libro_id', $libro->id)
+                ->where('estado', 'pendiente')
+                ->first();
         }
-
-        // Libros relacionados
-        $relatedBooks = Libro::where('categoria_id', $libro->categoria_id)
+        
+        // Reseñas (todas, sin filtrar por estado)
+        $resenas = Resena::with('usuario')
+            ->where('libro_id', $libro->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
+        
+        // Otros libros (no relacionados, solo diferentes al actual)
+        $libros_relacionados = Libro::with(['autor', 'categoria'])
             ->where('id', '!=', $libro->id)
-            ->with(['autor', 'categoria'])
-            ->limit(4)
+            ->where('estado', 'disponible')
+            ->inRandomOrder()
+            ->limit(6)
             ->get();
 
-        return view('books.show', compact('libro', 'isFavorite', 'relatedBooks'));
+        // Estadísticas del libro
+        $stats_libro = [
+            'total_prestamos' => Prestamo::where('libro_id', $libro->id)->count(),
+            'total_reservas' => Reserva::where('libro_id', $libro->id)->count(),
+            'total_favoritos' => Favorito::where('libro_id', $libro->id)->count(),
+            'total_resenas' => Resena::where('libro_id', $libro->id)->count(),
+            'promedio_rating' => Resena::where('libro_id', $libro->id)->avg('calificacion') ?? 0
+        ];
+        
+        return view('books.show', compact(
+            'libro',
+            'es_favorito',
+            'tiene_resena',
+            'resena_usuario',
+            'prestamo_activo',
+            'reserva_activa',
+            'resenas',
+            'libros_relacionados',
+            'stats_libro'
+        ));
     }
 
     /**
-     * Agregar libro a la lista de vistos recientemente
+     * Solicitar préstamo de libro
      */
-    private function agregarLibroVisto($libroId)
+    public function requestLoan($id)
     {
-        $librosVistos = session('libros_vistos', []);
+        $user = Auth::user();
+        $libro = Libro::findOrFail($id);
         
-        // Remover si ya existe
-        $librosVistos = array_filter($librosVistos, function($id) use ($libroId) {
-            return $id != $libroId;
-        });
+        // Verificar si el libro está disponible
+        if ($libro->estado !== 'disponible') {
+            return back()->with('error', 'El libro no está disponible para préstamo.');
+        }
         
-        // Agregar al inicio
-        array_unshift($librosVistos, $libroId);
+        // Verificar si el usuario ya tiene un préstamo activo de este libro
+        $prestamo_existente = Prestamo::where('usuario_id', $user->id)
+            ->where('libro_id', $libro->id)
+            ->whereIn('estado', ['prestado', 'vencido'])
+            ->first();
         
-        // Mantener solo los últimos 10
-        $librosVistos = array_slice($librosVistos, 0, 10);
+        if ($prestamo_existente) {
+            return back()->with('error', 'Ya tienes un préstamo activo de este libro.');
+        }
         
-        session(['libros_vistos' => $librosVistos]);
+        // Verificar límite de préstamos del usuario
+        $prestamos_activos = Prestamo::where('usuario_id', $user->id)
+            ->whereIn('estado', ['prestado', 'vencido'])
+            ->count();
+        
+        if ($prestamos_activos >= 5) {
+            return back()->with('error', 'Has alcanzado el límite máximo de préstamos activos (5).');
+        }
+        
+        // Crear préstamo
+        $prestamo = Prestamo::create([
+            'usuario_id' => $user->id,
+            'libro_id' => $libro->id,
+            'fecha_prestamo' => now(),
+            'fecha_devolucion' => now()->addDays(15),
+            'estado' => 'prestado',
+            'renovaciones' => 0
+        ]);
+        
+        // Actualizar disponibilidad del libro
+        $libro->estado = 'no_disponible';
+        $libro->save();
+        
+        // Crear notificación
+        \App\Models\Notificacion::create([
+            'usuario_id' => $user->id,
+            'titulo' => 'Préstamo Realizado',
+            'mensaje' => "Has prestado '{$libro->titulo}'. Fecha de devolución: " . $prestamo->fecha_devolucion->format('d/m/Y'),
+            'tipo' => 'prestamo',
+            'leida' => false
+        ]);
+        
+        return back()->with('success', 'Préstamo realizado exitosamente. Fecha de devolución: ' . $prestamo->fecha_devolucion->format('d/m/Y'));
     }
 
     /**
-     * Display a listing of the resource.
+     * Reservar libro
      */
-    public function index()
+    public function reserveBook($id)
     {
-        $query = Libro::with(['autor', 'categoria']);
+        $user = Auth::user();
+        $libro = Libro::findOrFail($id);
+        
+        // Verificar si ya tiene una reserva activa
+        $reserva_existente = Reserva::where('usuario_id', $user->id)
+            ->where('libro_id', $libro->id)
+            ->where('estado', 'pendiente')
+            ->first();
+        
+        if ($reserva_existente) {
+            return back()->with('error', 'Ya tienes una reserva activa de este libro.');
+        }
+        
+        // Verificar límite de reservas
+        $reservas_activas = Reserva::where('usuario_id', $user->id)
+            ->where('estado', 'pendiente')
+            ->count();
+        
+        if ($reservas_activas >= 3) {
+            return back()->with('error', 'Has alcanzado el límite máximo de reservas activas (3).');
+        }
+        
+        // Crear reserva
+        $reserva = Reserva::create([
+            'usuario_id' => $user->id,
+            'libro_id' => $libro->id,
+            'fecha_reserva' => now(),
+            'estado' => 'pendiente'
+        ]);
+        
+        // Crear notificación
+        \App\Models\Notificacion::create([
+            'usuario_id' => $user->id,
+            'titulo' => 'Libro Reservado',
+            'mensaje' => "Has reservado '{$libro->titulo}'. Te notificaremos cuando esté disponible.",
+            'tipo' => 'reserva',
+            'leida' => false
+        ]);
+        
+        return back()->with('success', 'Libro reservado exitosamente. Te notificaremos cuando esté disponible.');
+    }
 
-        // Filtros para administrador
-        if (request()->filled('search')) {
-            $search = request()->search;
+    /**
+     * Comprar libro
+     */
+    public function purchaseBook($id)
+    {
+        $user = Auth::user();
+        $libro = Libro::findOrFail($id);
+        
+        // Verificar si ya lo compró
+        $compra_existente = Compra::where('usuario_id', $user->id)
+            ->where('libro_id', $libro->id)
+            ->first();
+        
+        if ($compra_existente) {
+            return back()->with('error', 'Ya has comprado este libro.');
+        }
+        
+        // Eliminar cualquier uso de $libro->tipo y lógica de compra basada en 'tipo'
+        // Usar solo los campos existentes en la tabla libros
+        
+        return view('books.purchase', compact('libro'));
+    }
+
+    /**
+     * Procesar compra
+     */
+    public function processPurchase(Request $request, $id)
+    {
+        $request->validate([
+            'metodo_pago' => 'required|in:tarjeta,paypal,transferencia,yape',
+            'tipo_transaccion' => 'required|in:comprar,prestar',
+            'modalidad' => 'required|in:fisico,online',
+        ]);
+        
+        $user = Auth::user();
+        $libro = Libro::findOrFail($id);
+        $tipo = $request->input('tipo_transaccion');
+        $modalidad = $request->input('modalidad');
+        $precio = null;
+        $dias_prestamo = null;
+
+        // Determinar precio y días de préstamo según selección
+        if ($tipo === 'comprar') {
+            if ($modalidad === 'fisico') {
+                $precio = $libro->precio_compra_fisica;
+            } elseif ($modalidad === 'online') {
+                $precio = $libro->precio_compra_online;
+            }
+        } elseif ($tipo === 'prestar') {
+            if ($modalidad === 'fisico') {
+                $precio = $libro->precio_prestamo_fisico;
+                $dias_prestamo = 14;
+            } elseif ($modalidad === 'online') {
+                $precio = $libro->precio_prestamo_online;
+                $dias_prestamo = 7;
+            }
+        }
+
+        if ($precio === null) {
+            return back()->with('error', 'No se pudo determinar el precio para la opción seleccionada.');
+        }
+        
+        // Verificar si ya lo compró o prestó
+        if ($tipo === 'comprar') {
+            $compra_existente = \App\Models\Compra::where('usuario_id', $user->id)
+            ->where('libro_id', $libro->id)
+                ->where('modalidad', $modalidad)
+            ->first();
+        if ($compra_existente) {
+                return back()->with('error', 'Ya has comprado este libro en esta modalidad.');
+        }
+        // Crear compra
+            $compra = \App\Models\Compra::create([
+            'usuario_id' => $user->id,
+            'libro_id' => $libro->id,
+                'precio' => $precio,
+                'modalidad' => $modalidad,
+                'estado' => 'completada',
+        ]);
+            // Notificación
+        \App\Models\Notificacion::create([
+            'usuario_id' => $user->id,
+            'titulo' => 'Compra Exitosa',
+                'mensaje' => "Has comprado '{$libro->titulo}' ({$modalidad}) por S/" . number_format($precio, 2),
+            'tipo' => 'success', // Cambiado de 'compra' a 'success'
+            'leida' => false
+        ]);
+        return redirect()->route('user.dashboard')->with('success', '¡Compra realizada exitosamente! El libro ya está disponible en tu panel.');
+        } elseif ($tipo === 'prestar') {
+            $prestamo_existente = \App\Models\Prestamo::where('usuario_id', $user->id)
+                ->where('libro_id', $libro->id)
+                ->where('modalidad', $modalidad)
+                ->whereIn('estado', ['prestado', 'vencido'])
+                ->first();
+            if ($prestamo_existente) {
+                return back()->with('error', 'Ya tienes un préstamo activo de este libro en esta modalidad.');
+            }
+            // Crear préstamo
+            $prestamo = \App\Models\Prestamo::create([
+                'usuario_id' => $user->id,
+                'libro_id' => $libro->id,
+                'fecha_prestamo' => now(),
+                'fecha_devolucion' => now()->addDays($dias_prestamo),
+                'precio' => $precio,
+                'modalidad' => $modalidad,
+                'estado' => 'prestado',
+                'renovaciones' => 0
+            ]);
+            // Notificación
+            \App\Models\Notificacion::create([
+                'usuario_id' => $user->id,
+                'titulo' => 'Préstamo Realizado',
+                'mensaje' => "Has prestado '{$libro->titulo}' ({$modalidad}). Fecha de devolución: " . $prestamo->fecha_devolucion->format('d/m/Y'),
+                'tipo' => 'info', // Cambiado de 'prestamo' a 'info'
+                'leida' => false
+            ]);
+            return redirect()->route('user.dashboard')->with('success', '¡Préstamo realizado exitosamente! El libro ya está disponible en tu panel.');
+        }
+        return back()->with('error', 'Ocurrió un error inesperado.');
+    }
+
+    /**
+     * Página de éxito de compra
+     */
+    public function purchaseSuccess($id)
+    {
+        $compra = Compra::with(['libro', 'libro.autor'])
+            ->where('usuario_id', Auth::id())
+            ->findOrFail($id);
+        
+        return view('books.purchase-success', compact('compra'));
+    }
+
+    /**
+     * Leer libro (para libros comprados o prestados)
+     */
+    public function readBook($id)
+    {
+        $libro = Libro::findOrFail($id);
+        $user = Auth::user();
+        $tieneAcceso = false;
+        $prestamo = null;
+        
+        if ($user) {
+            // Verificar si tiene préstamo activo
+            $prestamo = Prestamo::where('usuario_id', $user->id)
+                ->where('libro_id', $id)
+                ->where('estado', 'prestado')
+                ->first();
+            
+            // Verificar si lo compró
+            $compra = Compra::where('usuario_id', $user->id)
+                ->where('libro_id', $id)
+                ->first();
+            
+            $tieneAcceso = $prestamo || $compra;
+        }
+        
+        return view('books.read', compact('libro', 'tieneAcceso', 'prestamo'));
+    }
+
+    /**
+     * Búsqueda avanzada
+     */
+    public function advancedSearch(Request $request)
+    {
+        $query = Libro::with(['autor', 'categoria'])
+            ->where('estado', 'disponible');
+        
+        // Búsqueda por texto
+        if ($request->filled('q')) {
+            $search = $request->q;
             $query->where(function($q) use ($search) {
                 $q->where('titulo', 'like', "%{$search}%")
+                  ->orWhere('descripcion', 'like', "%{$search}%")
                   ->orWhere('isbn', 'like', "%{$search}%")
                   ->orWhereHas('autor', function($q) use ($search) {
-                      $q->where('nombre', 'like', "%{$search}%")
-                        ->orWhere('apellido', 'like', "%{$search}%");
+                      $q->where('nombre', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('categoria', function($q) use ($search) {
+                      $q->where('nombre', 'like', "%{$search}%");
                   });
             });
         }
-
-        if (request()->filled('categoria')) {
-            $query->where('categoria_id', request()->categoria);
+        
+        // Filtros avanzados
+        if ($request->filled('categorias')) {
+            $query->whereIn('categoria_id', $request->categorias);
         }
-
-        if (request()->filled('estado')) {
-            $query->where('estado', request()->estado);
+        
+        if ($request->filled('autores')) {
+            $query->whereIn('autor_id', $request->autores);
         }
-
-        $sort = request()->get('sort', 'created_at');
-        $direction = request()->get('direction', 'desc');
-        $query->orderBy($sort, $direction);
-
-        $libros = $query->paginate(15);
-        $categorias = Categoria::activas()->get();
-
-        return view('admin.libros.index', compact('libros', 'categorias'));
+        
+        if ($request->filled('anio_min')) {
+            $query->whereYear('anio_publicacion', '>=', $request->anio_min);
+        }
+        
+        if ($request->filled('anio_max')) {
+            $query->whereYear('anio_publicacion', '<=', $request->anio_max);
+        }
+        
+        if ($request->filled('rating_min')) {
+            $query->where('rating', '>=', $request->rating_min);
+        }
+        
+        if ($request->filled('idiomas')) {
+            $query->whereIn('idioma', $request->idiomas);
+        }
+        
+        if ($request->filled('precio_min')) {
+            $query->where('precio', '>=', $request->precio_min);
+        }
+        
+        if ($request->filled('precio_max')) {
+            $query->where('precio', '<=', $request->precio_max);
+        }
+        
+        // Ordenamiento
+        $orden = $request->get('orden', 'relevancia');
+        switch ($orden) {
+            case 'fecha':
+                $query->orderBy('anio_publicacion', 'desc');
+                break;
+            case 'precio':
+                $query->orderBy('precio', 'asc');
+                break;
+            case 'titulo':
+                $query->orderBy('titulo', 'asc');
+                break;
+            default:
+                // Orden por relevancia (rating + popularidad)
+                $query->withCount('prestamos')
+                      ->orderBy('prestamos_count', 'desc');
+        }
+        
+        $libros = $query->paginate(20);
+        
+        // Datos para filtros
+        $categorias = Categoria::orderBy('nombre')->get();
+        $autores = Autor::orderBy('nombre')->get();
+        $idiomas = Libro::distinct()->pluck('idioma')->filter()->sort();
+        
+        return view('books.advanced-search', compact(
+            'libros',
+            'categorias',
+            'autores',
+            'idiomas'
+        ));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Libros populares
      */
+    public function popularBooks()
+    {
+        $libros = Libro::with(['autor', 'categoria'])
+            ->withCount('prestamos')
+            ->orderBy('prestamos_count', 'desc')
+            ->paginate(20);
+        
+        return view('books.popular', compact('libros'));
+    }
+
+    /**
+     * Libros recientes
+     */
+    public function recentBooks()
+    {
+        $libros = Libro::with(['autor', 'categoria'])
+            ->orderBy('anio_publicacion', 'desc')
+            ->paginate(20);
+        
+        return view('books.recent', compact('libros'));
+    }
+
+    /**
+     * Libros por categoría
+     */
+    public function booksByCategory($categoria_id)
+    {
+        $categoria = Categoria::findOrFail($categoria_id);
+        
+        $libros = Libro::with(['autor', 'categoria'])
+            ->where('categoria_id', $categoria_id)
+            ->where('estado', 'disponible')
+            ->orderBy('titulo')
+            ->paginate(20);
+        
+        return view('books.by-category', compact('libros', 'categoria'));
+    }
+
+    /**
+     * Libros por autor
+     */
+    public function booksByAuthor($autor_id)
+    {
+        $autor = Autor::findOrFail($autor_id);
+        
+        $libros = Libro::with(['autor', 'categoria'])
+            ->where('autor_id', $autor_id)
+            ->where('estado', 'disponible')
+            ->orderBy('anio_publicacion', 'desc')
+            ->paginate(20);
+        
+        return view('books.by-author', compact('libros', 'autor'));
+    }
+
+    /**
+     * Recomendaciones personalizadas
+     */
+    public function recommendations()
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login');
+        }
+        
+        // Obtener recomendaciones basadas en historial
+        $recomendaciones = $this->getPersonalizedRecommendations($user);
+        
+        // Libros populares en categorías favoritas
+        $categorias_favoritas = Prestamo::join('libros', 'prestamos.libro_id', '=', 'libros.id')
+            ->join('categorias', 'libros.categoria_id', '=', 'categorias.id')
+            ->where('prestamos.usuario_id', $user->id)
+            ->select('categorias.id', 'categorias.nombre', DB::raw('COUNT(*) as total'))
+            ->groupBy('categorias.id', 'categorias.nombre')
+            ->orderBy('total', 'desc')
+            ->limit(3)
+            ->pluck('categorias.id');
+        
+        $libros_populares_categoria = Libro::with(['autor', 'categoria'])
+            ->withCount('prestamos')
+            ->whereIn('categoria_id', $categorias_favoritas)
+            ->where('estado', 'disponible')
+            ->whereNotIn('id', function($query) use ($user) {
+                $query->select('libro_id')
+                      ->from('prestamos')
+                      ->where('usuario_id', $user->id);
+            })
+            ->orderBy('prestamos_count', 'desc')
+            ->limit(10)
+            ->get();
+        
+        return view('books.recommendations', compact('recomendaciones', 'libros_populares_categoria'));
+    }
+
+    /**
+     * Obtener recomendaciones personalizadas
+     */
+    private function getPersonalizedRecommendations($user)
+    {
+        // Algoritmo de recomendación basado en colaboración
+        $libros_leidos = Prestamo::where('usuario_id', $user->id)
+            ->pluck('libro_id')
+            ->toArray();
+        
+        if (empty($libros_leidos)) {
+            // Si no tiene historial, mostrar libros populares
+            return Libro::with(['autor', 'categoria'])
+                ->withCount('prestamos')
+                ->where('estado', 'disponible')
+                ->orderBy('prestamos_count', 'desc')
+                ->limit(10)
+                ->get();
+        }
+        
+        // Encontrar usuarios similares
+        $usuarios_similares = Prestamo::whereIn('libro_id', $libros_leidos)
+            ->where('usuario_id', '!=', $user->id)
+            ->select('usuario_id', DB::raw('COUNT(*) as libros_comunes'))
+            ->groupBy('usuario_id')
+            ->having('libros_comunes', '>=', 2)
+            ->orderBy('libros_comunes', 'desc')
+            ->limit(10)
+            ->pluck('usuario_id');
+        
+        if ($usuarios_similares->isEmpty()) {
+            // Si no hay usuarios similares, usar recomendaciones basadas en contenido
+            return $this->getContentBasedRecommendations($user);
+        }
+        
+        // Obtener libros que les gustan a usuarios similares
+        $libros_recomendados = Prestamo::whereIn('usuario_id', $usuarios_similares)
+            ->whereNotIn('libro_id', $libros_leidos)
+            ->select('libro_id', DB::raw('COUNT(*) as popularidad'))
+            ->groupBy('libro_id')
+            ->orderBy('popularidad', 'desc')
+            ->limit(10)
+            ->pluck('libro_id');
+        
+        return Libro::with(['autor', 'categoria'])
+            ->whereIn('id', $libros_recomendados)
+            ->where('estado', 'disponible')
+            ->get();
+    }
+
+    /**
+     * Recomendaciones basadas en contenido
+     */
+    private function getContentBasedRecommendations($user)
+    {
+        // Obtener características de libros leídos
+        $categorias_favoritas = Prestamo::join('libros', 'prestamos.libro_id', '=', 'libros.id')
+            ->join('categorias', 'libros.categoria_id', '=', 'categorias.id')
+            ->where('prestamos.usuario_id', $user->id)
+            ->select('categorias.id', DB::raw('COUNT(*) as peso'))
+            ->groupBy('categorias.id')
+            ->orderBy('peso', 'desc')
+            ->limit(3)
+            ->pluck('categorias.id');
+        
+        $autores_favoritos = Prestamo::join('libros', 'prestamos.libro_id', '=', 'libros.id')
+            ->join('autors', 'libros.autor_id', '=', 'autors.id')
+            ->where('prestamos.usuario_id', $user->id)
+            ->select('autors.id', DB::raw('COUNT(*) as peso'))
+            ->groupBy('autors.id')
+            ->orderBy('peso', 'desc')
+            ->limit(3)
+            ->pluck('autors.id');
+        
+        return Libro::with(['autor', 'categoria'])
+            ->where(function($query) use ($categorias_favoritas, $autores_favoritos) {
+                $query->whereIn('categoria_id', $categorias_favoritas)
+                      ->orWhereIn('autor_id', $autores_favoritos);
+            })
+            ->where('estado', 'disponible')
+            ->whereNotIn('id', function($query) use ($user) {
+                $query->select('libro_id')
+                      ->from('prestamos')
+                      ->where('usuario_id', $user->id);
+            })
+            ->orderBy('anio_publicacion', 'desc')
+            ->limit(10)
+            ->get();
+    }
+
+    /**
+     * Exportar catálogo
+     */
+    public function exportCatalog(Request $request)
+    {
+        $query = Libro::with(['autor', 'categoria'])
+            ->where('estado', 'disponible');
+        
+        // Aplicar filtros si existen
+        if ($request->filled('categoria')) {
+            $query->where('categoria_id', $request->categoria);
+        }
+        
+        if ($request->filled('autor')) {
+            $query->where('autor_id', $request->autor);
+        }
+        
+        $libros = $query->get();
+        
+        $filename = 'catalogo_libros_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+        
+        $callback = function() use ($libros) {
+            $file = fopen('php://output', 'w');
+            
+            // Headers del CSV
+            fputcsv($file, [
+                'ID', 'Título', 'Autor', 'Categoría', 'ISBN', 'Año Publicación',
+                'Idioma', 'Precio', 'Rating', 'Descripción'
+            ]);
+            
+            // Datos
+            foreach ($libros as $libro) {
+                fputcsv($file, [
+                    $libro->id,
+                    $libro->titulo,
+                    $libro->autor->nombre ?? '',
+                    $libro->categoria->nombre ?? '',
+                    $libro->isbn,
+                    $libro->anio_publicacion ? $libro->anio_publicacion->format('Y') : '',
+                    $libro->idioma,
+                    $libro->precio,
+                    $libro->rating,
+                    $libro->descripcion
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * API para búsqueda en tiempo real
+     */
+    public function searchApi(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+        
+        $libros = Libro::with(['autor', 'categoria'])
+            ->where('estado', 'disponible')
+            ->where(function($q) use ($query) {
+                $q->where('titulo', 'like', "%{$query}%")
+                  ->orWhereHas('autor', function($q) use ($query) {
+                      $q->where('nombre', 'like', "%{$query}%");
+                  });
+            })
+            ->limit(10)
+            ->get()
+            ->map(function($libro) {
+                return [
+                    'id' => $libro->id,
+                    'titulo' => $libro->titulo,
+                    'autor' => $libro->autor->nombre ?? '',
+                    'categoria' => $libro->categoria->nombre ?? '',
+                    'url' => route('books.show', $libro->id)
+                ];
+            });
+        
+        return response()->json($libros);
+    }
+
     public function create()
     {
-        $autores = Autor::activos()->get();
-        $categorias = Categoria::activas()->get();
-        return view('admin.libros.create', compact('autores', 'categorias'));
+        $autores = \App\Models\Autor::all();
+        $categorias = \App\Models\Categoria::all();
+        return view('admin.books.create', compact('autores', 'categorias'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function edit($id)
     {
-        $request->validate([
-            'titulo' => 'required|string|max:255',
-            'isbn' => 'nullable|string|max:20|unique:libros',
-            'sinopsis' => 'nullable|string',
-            'anio_publicacion' => 'nullable|integer|min:1800|max:' . (date('Y') + 1),
-            'editorial' => 'nullable|string|max:255',
-            'paginas' => 'nullable|integer|min:1',
-            'idioma' => 'nullable|string|max:50',
-            'autor_id' => 'required|exists:autores,id',
-            'categoria_id' => 'required|exists:categorias,id',
-            'stock' => 'required|integer|min:0',
-            'ubicacion' => 'nullable|string|max:100',
-            'imagen_portada' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        $libro = Libro::findOrFail($id);
+        $autores = \App\Models\Autor::all();
+        $categorias = \App\Models\Categoria::all();
+        return view('admin.books.edit', compact('libro', 'autores', 'categorias'));
+    }
+
+    public function createPrestamo(Request $request, $id)
+    {
+        $user = auth()->user();
+        $libro = \App\Models\Libro::findOrFail($id);
+
+        // Verificar disponibilidad
+        if ($libro->estado !== 'disponible') {
+            return back()->with('error', 'El libro no está disponible para préstamo.');
+        }
+
+        // Verificar si ya tiene un préstamo activo
+        $prestamoExistente = \App\Models\Prestamo::where('usuario_id', $user->id)
+            ->where('libro_id', $libro->id)
+            ->whereIn('estado', ['prestado', 'vencido'])
+            ->first();
+        if ($prestamoExistente) {
+            return back()->with('error', 'Ya tienes un préstamo activo para este libro.');
+        }
+
+        // Registrar préstamo
+        $fecha_prestamo = now();
+        $fecha_devolucion = now()->addDays(14);
+        \App\Models\Prestamo::create([
+            'usuario_id' => $user->id,
+            'libro_id' => $libro->id,
+            'fecha_prestamo' => $fecha_prestamo,
+            'fecha_devolucion_esperada' => $fecha_devolucion,
+            'estado' => 'prestado',
         ]);
 
-        $data = $request->all();
-        $data['estado'] = 'disponible';
+        // Cambiar estado del libro
+        $libro->estado = 'prestado';
+        $libro->save();
 
-        if ($request->hasFile('imagen_portada')) {
-            $data['imagen_portada'] = $request->file('imagen_portada')->store('libros', 'public');
-        }
-
-        Libro::create($data);
-
-        return redirect()->route('admin.books.index')
-            ->with('success', 'Libro agregado exitosamente');
+        return back()->with('success', '¡Préstamo realizado con éxito!');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function showAdmin(Libro $libro)
+    public function deleteBook($id)
     {
-        $libro->load(['autor', 'categoria', 'prestamos', 'reservas']);
-        return view('admin.libros.show', compact('libro'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Libro $libro)
-    {
-        $autores = Autor::activos()->get();
-        $categorias = Categoria::activas()->get();
-        return view('admin.libros.edit', compact('libro', 'autores', 'categorias'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Libro $libro)
-    {
-        $request->validate([
-            'titulo' => 'required|string|max:255',
-            'isbn' => 'nullable|string|max:20|unique:libros,isbn,' . $libro->id,
-            'sinopsis' => 'nullable|string',
-            'anio_publicacion' => 'nullable|integer|min:1800|max:' . (date('Y') + 1),
-            'editorial' => 'nullable|string|max:255',
-            'paginas' => 'nullable|integer|min:1',
-            'idioma' => 'nullable|string|max:50',
-            'autor_id' => 'required|exists:autores,id',
-            'categoria_id' => 'required|exists:categorias,id',
-            'stock' => 'required|integer|min:0',
-            'ubicacion' => 'nullable|string|max:100',
-            'imagen_portada' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-
-        $data = $request->all();
-
-        if ($request->hasFile('imagen_portada')) {
-            // Eliminar imagen anterior si existe
-            if ($libro->imagen_portada) {
-                \Storage::disk('public')->delete($libro->imagen_portada);
-            }
-            $data['imagen_portada'] = $request->file('imagen_portada')->store('libros', 'public');
-        }
-
-        $libro->update($data);
-
-        return redirect()->route('admin.books.index')
-            ->with('success', 'Libro actualizado exitosamente');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Libro $libro)
-    {
-        // Verificar si el libro tiene préstamos o reservas activas
-        if ($libro->prestamos()->where('estado', 'prestado')->exists()) {
-            return back()->with('error', 'No se puede eliminar un libro con préstamos activos.');
-        }
-
-        if ($libro->reservas()->where('estado', 'pendiente')->exists()) {
-            return back()->with('error', 'No se puede eliminar un libro con reservas pendientes.');
-        }
-
-        // Eliminar imagen si existe
-        if ($libro->imagen_portada) {
-            \Storage::disk('public')->delete($libro->imagen_portada);
-        }
-
+        $user = Auth::user();
+        $libro = Libro::findOrFail($id);
+        $titulo = $libro->titulo;
         $libro->delete();
-
-        return redirect()->route('admin.books.index')
-            ->with('success', 'Libro eliminado exitosamente');
-    }
-
-    /**
-     * Upload image for a book
-     */
-    public function uploadImage(Request $request, Libro $libro)
-    {
-        $request->validate([
-            'imagen_portada' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        // Notificación de eliminación
+        \App\Models\Notificacion::create([
+            'usuario_id' => $user->id,
+            'titulo' => 'Libro eliminado',
+            'mensaje' => "Has eliminado el libro '{$titulo}' de la biblioteca.",
+            'tipo' => 'libro',
+            'leida' => false
         ]);
-
-        if ($request->hasFile('imagen_portada')) {
-            // Eliminar imagen anterior si existe
-            if ($libro->imagen_portada) {
-                \Storage::disk('public')->delete($libro->imagen_portada);
-            }
-
-            $path = $request->file('imagen_portada')->store('libros', 'public');
-            $libro->update(['imagen_portada' => $path]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Imagen subida exitosamente',
-                'path' => asset('storage/' . $path)
-            ]);
-        }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al subir la imagen'
-        ], 400);
+        return back()->with('success', 'Libro eliminado exitosamente.');
     }
 }

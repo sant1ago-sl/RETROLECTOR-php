@@ -16,7 +16,7 @@ class ClienteMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (!auth()->check()) {
-            return redirect()->route('login.user')->with('error', 'Debe iniciar sesión para acceder a esta sección.');
+            return redirect()->route('login')->with('error', 'Debe iniciar sesión para acceder a esta sección.');
         }
 
         if (!auth()->user()->isCliente()) {

@@ -3,153 +3,397 @@
 @section('title', 'Panel de Administración')
 
 @section('content')
-<div class="container py-4">
-    <!-- Header -->
+<div class="container-fluid py-4 animate__animated animate__fadeIn">
+    <!-- Header del Dashboard -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-tachometer-alt me-2"></i>
-                        Panel de Administración
+                    <h1 class="display-5 fw-bold mb-2 text-gradient">
+                        <i class="fas fa-cogs me-3"></i>Panel de Administración
                     </h1>
-                    <p class="text-muted mb-0">Gestión completa de la biblioteca digital</p>
+                    <p class="lead text-muted">Bienvenido, {{ Auth::user()->nombre }}. Aquí tienes una visión completa de tu biblioteca.</p>
                 </div>
                 <div class="text-end">
-                    <p class="mb-0">
-                        <i class="fas fa-calendar-alt me-1"></i>
-                        {{ now()->format('d/m/Y H:i') }}
-                    </p>
+                    <div class="text-muted">
+                        <i class="fas fa-clock me-1"></i>{{ now()->format('d/m/Y H:i') }}
+                    </div>
+                    <small class="text-muted">Última actualización: {{ now()->diffForHumans() }}</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Alertas del Sistema -->
+    @if(count($alertas) > 0)
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-gradient-warning text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Alertas del Sistema
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach($alertas as $alerta)
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="alert alert-{{ $alerta['tipo'] }} border-0 d-flex align-items-center">
+                                        <i class="{{ $alerta['icono'] }} me-3 fa-lg"></i>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ $alerta['titulo'] }}</h6>
+                                            <p class="mb-2 small">{{ $alerta['mensaje'] }}</p>
+                                            <a href="{{ $alerta['accion'] }}" class="btn btn-sm btn-outline-{{ $alerta['tipo'] }}">
+                                                Ver detalles
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Estadísticas Principales -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeInUp">
                 <div class="card-body text-center">
-                    <div class="stats-icon bg-primary bg-opacity-10 text-primary mb-3">
-                        <i class="fas fa-users fa-2x"></i>
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-gradient-primary rounded-circle p-3 me-3">
+                            <i class="fas fa-users fa-2x text-white"></i>
+                        </div>
+                        <div class="text-start">
+                            <h2 class="mb-0 fw-bold text-primary">{{ number_format($stats['total_usuarios']) }}</h2>
+                            <p class="text-muted mb-0">Usuarios Registrados</p>
+                        </div>
                     </div>
-                    <h4 class="fw-bold text-primary">{{ App\Models\Usuario::where('tipo', 'cliente')->count() }}</h4>
-                    <p class="text-muted mb-0">Usuarios Registrados</p>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-gradient-primary" style="width: 85%"></div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm">
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
                 <div class="card-body text-center">
-                    <div class="stats-icon bg-success bg-opacity-10 text-success mb-3">
-                        <i class="fas fa-book fa-2x"></i>
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-gradient-success rounded-circle p-3 me-3">
+                            <i class="fas fa-book fa-2x text-white"></i>
+                        </div>
+                        <div class="text-start">
+                            <h2 class="mb-0 fw-bold text-success">{{ number_format($stats['total_libros']) }}</h2>
+                            <p class="text-muted mb-0">Libros en Catálogo</p>
+                        </div>
                     </div>
-                    <h4 class="fw-bold text-success">{{ App\Models\Libro::count() }}</h4>
-                    <p class="text-muted mb-0">Total Libros</p>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-gradient-success" style="width: 92%"></div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm">
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
                 <div class="card-body text-center">
-                    <div class="stats-icon bg-warning bg-opacity-10 text-warning mb-3">
-                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-gradient-info rounded-circle p-3 me-3">
+                            <i class="fas fa-handshake fa-2x text-white"></i>
+                        </div>
+                        <div class="text-start">
+                            <h2 class="mb-0 fw-bold text-info">{{ number_format($stats['prestamos_activos']) }}</h2>
+                            <p class="text-muted mb-0">Préstamos Activos</p>
+                        </div>
                     </div>
-                    <h4 class="fw-bold text-warning">{{ App\Models\Prestamo::where('estado', 'activo')->count() }}</h4>
-                    <p class="text-muted mb-0">Préstamos Activos</p>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-gradient-info" style="width: 78%"></div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm">
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
                 <div class="card-body text-center">
-                    <div class="stats-icon bg-info bg-opacity-10 text-info mb-3">
-                        <i class="fas fa-clock fa-2x"></i>
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-gradient-warning rounded-circle p-3 me-3">
+                            <i class="fas fa-calendar-check fa-2x text-white"></i>
+                        </div>
+                        <div class="text-start">
+                            <h2 class="mb-0 fw-bold text-warning">{{ number_format($stats['reservas_pendientes']) }}</h2>
+                            <p class="text-muted mb-0">Reservas Pendientes</p>
+                        </div>
                     </div>
-                    <h4 class="fw-bold text-info">{{ App\Models\Reserva::where('estado', 'pendiente')->count() }}</h4>
-                    <p class="text-muted mb-0">Reservas Pendientes</p>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-gradient-warning" style="width: 65%"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Users Management -->
-        <div class="col-lg-8 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <!-- Panel de estadísticas rápidas del admin -->
+    @if(Auth::user()->isAdmin())
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm animate__animated animate__fadeInUp">
+                <div class="card-header bg-gradient-info text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-users me-2"></i>
-                        Gestión de Usuarios
+                        <i class="fas fa-user-cog me-2"></i>Tu Actividad como Administrador
                     </h5>
-                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                        <i class="fas fa-plus me-1"></i>
-                        Agregar Usuario
-                    </button>
                 </div>
                 <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-3">
+                            <h4 class="text-primary fw-bold">{{ $stats['libros_creados_por_mi'] ?? 0 }}</h4>
+                            <small class="text-muted">Libros creados por ti</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h4 class="text-success fw-bold">{{ $stats['prestamos_mis_libros'] ?? 0 }}</h4>
+                            <small class="text-muted">Préstamos de tus libros</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h4 class="text-info fw-bold">{{ $stats['ventas_mis_libros'] ?? 0 }}</h4>
+                            <small class="text-muted">Ventas de tus libros</small>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Sugerencia:</strong> Agrega portadas atractivas y descripciones completas para que tus libros destaquen más en el catálogo.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Gráficos y Estadísticas Detalladas -->
+    <div class="row mb-4">
+        <!-- Gráfico de Préstamos por Mes -->
+        <div class="col-xl-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Préstamos por Mes (Últimos 6 meses)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="prestamosChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas Rápidas -->
+        <div class="col-xl-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-gradient-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>Estadísticas Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border-end">
+                                <h4 class="text-primary fw-bold">{{ number_format($stats['libros_disponibles']) }}</h4>
+                                <small class="text-muted">Libros Disponibles</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-danger fw-bold">{{ number_format($stats['prestamos_vencidos']) }}</h4>
+                            <small class="text-muted">Préstamos Vencidos</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border-end">
+                                <h4 class="text-info fw-bold">{{ number_format($stats['libros_prestados']) }}</h4>
+                                <small class="text-muted">Libros Prestados</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-warning fw-bold">{{ number_format($stats['resenas_pendientes']) }}</h4>
+                            <small class="text-muted">Reseñas Pendientes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="row">
+        <!-- Libros Más Populares -->
+        <div class="col-xl-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-gradient-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>Libros Más Populares
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if($librosPopulares->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach($librosPopulares as $libro)
+                                @php
+                                    $isUrl = $libro->imagen_portada && (str_starts_with($libro->imagen_portada, 'http://') || str_starts_with($libro->imagen_portada, 'https://'));
+                                @endphp
+                                <div class="list-group-item border-0 px-0 py-3">
+                                    <div class="d-flex align-items-center">
+                                        @if($libro->imagen_portada)
+                                            <img src="{{ $isUrl ? $libro->imagen_portada : asset('storage/' . $libro->imagen_portada) }}"
+                                                 alt="{{ $libro->titulo }}"
+                                                 class="me-3"
+                                                 style="width: 50px; height: 70px; object-fit: cover; border-radius: 8px;">
+                                        @else
+                                            <div class="me-3 bg-light d-flex align-items-center justify-content-center"
+                                                 style="width: 50px; height: 70px; border-radius: 8px;">
+                                                <i class="fas fa-book text-muted"></i>
+                                            </div>
+                                        @endif
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ $libro->titulo }}</h6>
+                                            <p class="text-muted mb-1 small">{{ $libro->autor->nombre }} {{ $libro->autor->apellido }}</p>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-primary me-2">{{ $libro->prestamos_count }} préstamos</span>
+                                                <span class="badge bg-secondary">{{ $libro->categoria->nombre }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <a href="{{ route('admin.books.edit', $libro) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay datos de popularidad aún</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Usuarios Más Activos -->
+        <div class="col-xl-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-gradient-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Usuarios Más Activos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if($usuariosActivos->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach($usuariosActivos as $usuario)
+                                <div class="list-group-item border-0 px-0 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-gradient-primary rounded-circle p-2 me-3">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ $usuario->nombre_completo }}</h6>
+                                            <p class="text-muted mb-1 small">{{ $usuario->email }}</p>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-success me-2">{{ $usuario->prestamos_count }} préstamos</span>
+                                                <small class="text-muted">Miembro desde {{ $usuario->created_at->format('M Y') }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <a href="{{ route('admin.users.show', $usuario) }}" class="btn btn-outline-info btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay datos de actividad aún</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Préstamos Recientes y Acciones Rápidas -->
+    <div class="row">
+        <!-- Préstamos Recientes -->
+        <div class="col-xl-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Préstamos Recientes
+                    </h5>
+                </div>
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Usuario</th>
-                                    <th>Email</th>
-                                    <th>Teléfono</th>
+                                    <th>Libro</th>
+                                    <th>Fecha</th>
                                     <th>Estado</th>
-                                    <th>Préstamos</th>
-                                    <th>Registrado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach(App\Models\Usuario::where('tipo', 'cliente')->with(['prestamos'])->get() as $usuario)
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="user-avatar me-2">
-                                                <i class="fas fa-user-circle text-primary"></i>
+                                @foreach($prestamosRecientes as $prestamo)
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-gradient-primary rounded-circle p-1 me-2">
+                                                    <i class="fas fa-user text-white" style="font-size: 12px;"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ $prestamo->usuario->nombre_completo }}</div>
+                                                    <small class="text-muted">{{ $prestamo->usuario->email }}</small>
+                                                </div>
                                             </div>
+                                        </td>
+                                        <td>
                                             <div>
-                                                <strong>{{ $usuario->nombre }} {{ $usuario->apellido }}</strong>
-                                                <br>
-                                                <small class="text-muted">ID: {{ $usuario->id }}</small>
+                                                <div class="fw-bold">{{ $prestamo->libro->titulo }}</div>
+                                                <small class="text-muted">{{ $prestamo->libro->autor->nombre_completo }}</small>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ $usuario->email }}</td>
-                                    <td>{{ $usuario->telefono ?: 'No especificado' }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ $usuario->estado === 'activo' ? 'success' : 'danger' }}">
-                                            {{ ucfirst($usuario->estado) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">{{ $usuario->prestamos->where('estado', 'activo')->count() }} activos</span>
-                                    </td>
-                                    <td>{{ $usuario->created_at->format('d/m/Y') }}</td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" 
-                                                    onclick="verHistorialUsuario({{ $usuario->id }})"
-                                                    title="Ver Historial">
-                                                <i class="fas fa-history"></i>
-                                            </button>
-                                            <button class="btn btn-outline-warning" 
-                                                    onclick="editarUsuario({{ $usuario->id }})"
-                                                    title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-outline-{{ $usuario->estado === 'activo' ? 'danger' : 'success' }}" 
-                                                    onclick="toggleEstadoUsuario({{ $usuario->id }}, '{{ $usuario->estado }}')"
-                                                    title="{{ $usuario->estado === 'activo' ? 'Desactivar' : 'Activar' }}">
-                                                <i class="fas fa-{{ $usuario->estado === 'activo' ? 'ban' : 'check' }}"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <div class="fw-bold">{{ $prestamo->fecha_prestamo->format('d/m/Y') }}</div>
+                                                <small class="text-muted">{{ $prestamo->fecha_prestamo->diffForHumans() }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @switch($prestamo->estado)
+                                                @case('prestado')
+                                                    <span class="badge bg-success">Activo</span>
+                                                    @break
+                                                @case('devuelto')
+                                                    <span class="badge bg-info">Devuelto</span>
+                                                    @break
+                                                @case('vencido')
+                                                    <span class="badge bg-danger">Vencido</span>
+                                                    @break
+                                                @default
+                                                    <span class="badge bg-secondary">{{ ucfirst($prestamo->estado) }}</span>
+                                            @endswitch
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('admin.loans.show', $prestamo) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
                                 @endforeach
                             </tbody>
                         </table>
@@ -158,61 +402,37 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="col-lg-4 mb-4">
+        <!-- Acciones Rápidas -->
+        <div class="col-xl-4 mb-4">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-gradient-primary text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-cogs me-2"></i>
-                        Acciones Rápidas
+                        <i class="fas fa-bolt me-2"></i>Acciones Rápidas
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('admin.books.index') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-book me-2"></i>
-                            Gestionar Libros
+                    <div class="d-grid gap-3">
+                        <a href="{{ route('admin.books.create') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-2"></i>Agregar Nuevo Libro
                         </a>
-                        <a href="{{ route('admin.loans.index') }}" class="btn btn-outline-warning">
-                            <i class="fas fa-exchange-alt me-2"></i>
-                            Gestionar Préstamos
+                        <a href="{{ route('admin.authors.create') }}" class="btn btn-outline-success">
+                            <i class="fas fa-user-plus me-2"></i>Agregar Nuevo Autor
                         </a>
-                        <a href="{{ route('admin.reservations.index') }}" class="btn btn-outline-info">
-                            <i class="fas fa-clock me-2"></i>
-                            Gestionar Reservas
+                        <a href="{{ route('admin.users.index') }}" class="btn btn-outline-info">
+                            <i class="fas fa-users me-2"></i>Gestionar Usuarios
                         </a>
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-users me-2"></i>
-                            Gestionar Usuarios
+                        <a href="{{ route('admin.loans.index') }}" class="btn btn-outline-success">
+                            <i class="fas fa-handshake me-2"></i>Ver Préstamos
                         </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="card border-0 shadow-sm mt-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-chart-line me-2"></i>
-                        Actividad Reciente
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="activity-list">
-                        @foreach(App\Models\Prestamo::with(['usuario', 'libro'])->latest()->take(5)->get() as $prestamo)
-                        <div class="activity-item d-flex align-items-center mb-3">
-                            <div class="activity-icon me-3">
-                                <i class="fas fa-book text-primary"></i>
-                            </div>
-                            <div class="activity-content">
-                                <p class="mb-0 small">
-                                    <strong>{{ $prestamo->usuario->nombre }}</strong> tomó prestado 
-                                    <strong>{{ $prestamo->libro->titulo }}</strong>
-                                </p>
-                                <small class="text-muted">{{ $prestamo->created_at->diffForHumans() }}</small>
-                            </div>
-                        </div>
-                        @endforeach
+                        <a href="{{ route('admin.reviews.pending') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-star me-2"></i>Moderar Reseñas
+                        </a>
+                        <a href="{{ route('admin.notifications.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-bell me-2"></i>Gestionar Notificaciones
+                        </a>
+                        <a href="{{ route('admin.categories.index') }}" class="btn btn-outline-dark">
+                            <i class="fas fa-tags me-2"></i>Gestionar Categorías
+                        </a>
                     </div>
                 </div>
             </div>
@@ -220,286 +440,138 @@
     </div>
 </div>
 
-<!-- User History Modal -->
-<div class="modal fade" id="userHistoryModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Historial de Usuario</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="userHistoryContent">
-                <!-- Content will be loaded here -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add User Modal -->
-<div class="modal fade" id="addUserModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Agregar Nuevo Usuario</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="addUserForm">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nombre</label>
-                            <input type="text" class="form-control" name="nombre" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Apellido</label>
-                            <input type="text" class="form-control" name="apellido" required>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Teléfono</label>
-                        <input type="text" class="form-control" name="telefono">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Dirección</label>
-                        <textarea class="form-control" name="direccion" rows="2"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" name="password" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Crear Usuario</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
+@push('styles')
 <style>
-.stats-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    background: var(--bg-tertiary);
-    color: var(--primary-color);
+.text-gradient {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-.user-avatar {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    background: var(--bg-tertiary);
-    border-radius: 50%;
-    color: var(--primary-color);
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #667eea, #764ba2) !important;
 }
 
-.table {
-    background: var(--bg-card);
-    color: var(--text-primary);
+.bg-gradient-success {
+    background: linear-gradient(45deg, #f093fb, #f5576c) !important;
 }
 
-.table thead th {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border-bottom: 2px solid var(--border-color);
+.bg-gradient-info {
+    background: linear-gradient(45deg, #4facfe, #00f2fe) !important;
 }
 
-.table-hover tbody tr:hover {
-    background: var(--bg-secondary);
+.bg-gradient-warning {
+    background: linear-gradient(45deg, #43e97b, #38f9d7) !important;
 }
 
-.table td, .table th {
-    border-color: var(--border-color);
+.progress-bar {
+    transition: width 1s ease-in-out;
 }
 
-.card, .modal-content {
-    background: var(--bg-card);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.card-header, .modal-header {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-color);
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
 }
 
-.card-body, .modal-body {
-    background: var(--bg-card);
-    color: var(--text-primary);
+.list-group-item {
+    transition: background-color 0.3s ease;
 }
 
-.card-footer, .modal-footer {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border-top: 1px solid var(--border-color);
-}
-
-.form-label, .modal-title {
-    color: var(--text-primary);
-}
-
-.form-control, .form-select {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-}
-
-.form-control:focus, .form-select:focus {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
-}
-
-.form-control::placeholder {
-    color: var(--text-muted);
-}
-
-.form-check-label {
-    color: var(--text-primary);
-}
-
-.alert {
-    background-color: var(--bg-card);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-
-.alert-info {
-    background-color: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
-    color: var(--text-primary);
-}
-
-.btn-close {
-    filter: var(--btn-close-filter);
-}
-
-.claro .btn-close {
-    filter: none;
-}
-.oscuro .btn-close {
-    filter: invert(1);
-}
-
-.activity-icon {
-    width: 30px;
-    height: 30px;
-    background: var(--bg-light);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.activity-item {
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
-}
-
-.activity-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+.list-group-item:hover {
+    background-color: rgba(102, 126, 234, 0.05);
 }
 </style>
+@endpush
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-function verHistorialUsuario(userId) {
-    // Aquí cargarías el historial del usuario en el modal
-    document.getElementById('userHistoryContent').innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-        </div>
-    `;
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de préstamos por mes
+    const ctx = document.getElementById('prestamosChart').getContext('2d');
     
-    // Simular carga de datos
-    setTimeout(() => {
-        document.getElementById('userHistoryContent').innerHTML = `
-            <h6>Historial de Préstamos</h6>
-            <p>Aquí se mostraría el historial completo del usuario ${userId}</p>
-        `;
-    }, 1000);
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const datos = @json($prestamosPorMes);
     
-    new bootstrap.Modal(document.getElementById('userHistoryModal')).show();
-}
+    // Preparar datos para el gráfico
+    const datosGrafico = new Array(12).fill(0);
+    datos.forEach(item => {
+        datosGrafico[item.mes - 1] = item.total;
+    });
 
-function editarUsuario(userId) {
-    // Lógica para editar usuario
-    alert('Editar usuario ' + userId);
-}
-
-function toggleEstadoUsuario(userId, estadoActual) {
-    const nuevaAccion = estadoActual === 'activo' ? 'desactivar' : 'activar';
-    if (confirm(`¿Deseas ${nuevaAccion} este usuario?`)) {
-        // Lógica para cambiar estado
-        alert(`Usuario ${nuevaAccion}do exitosamente`);
-        location.reload();
-    }
-}
-
-// Form para agregar usuario
-document.getElementById('addUserForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    // Lógica para crear usuario
-    alert('Usuario creado exitosamente');
-    location.reload();
-});
-
-// Adaptar modales al tema
-function applyThemeToModals() {
-    const htmlElement = document.documentElement;
-    const isDarkTheme = htmlElement.classList.contains('oscuro');
-    const modals = document.querySelectorAll('.modal-content');
-    modals.forEach(modal => {
-        if (isDarkTheme) {
-            modal.classList.add('oscuro');
-            modal.classList.remove('claro');
-        } else {
-            modal.classList.add('claro');
-            modal.classList.remove('oscuro');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: meses,
+            datasets: [{
+                label: 'Préstamos',
+                data: datosGrafico,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    hoverBackgroundColor: '#667eea'
+                }
+            }
         }
     });
-}
-document.addEventListener('DOMContentLoaded', function() {
-    applyThemeToModals();
-    const modalTriggers = document.querySelectorAll('[data-bs-toggle="modal"]');
-    modalTriggers.forEach(trigger => {
-        trigger.addEventListener('click', function() {
-            setTimeout(applyThemeToModals, 100);
-        });
-    });
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                applyThemeToModals();
+
+    // Animaciones de contadores
+    const counters = document.querySelectorAll('h2');
+    counters.forEach(counter => {
+        const target = parseInt(counter.textContent.replace(/,/g, ''));
+        const increment = target / 100;
+        let current = 0;
+        
+        const updateCounter = () => {
+            if (current < target) {
+                current += increment;
+                counter.textContent = Math.floor(current).toLocaleString();
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target.toLocaleString();
             }
-        });
+        };
+        
+        updateCounter();
     });
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class']
-    });
-});
-document.addEventListener('shown.bs.modal', function() {
-    applyThemeToModals();
 });
 </script>
+@endpush
 @endsection 

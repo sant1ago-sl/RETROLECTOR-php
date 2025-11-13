@@ -3,89 +3,46 @@
 @section('title', 'Mis Favoritos - Retrolector')
 
 @section('content')
-<div class="container py-5">
+<div class="container py-5 animate__animated animate__fadeIn">
+    <div class="mb-4">
+        <a href="{{ route('user.dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i> Volver al Dashboard
+        </a>
+    </div>
+    <h2 class="fw-bold mb-4 text-center">Mis Favoritos</h2>
     <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2">
-                    <i class="fas fa-heart text-danger me-2"></i>
-                    Mis Favoritos
-                </h1>
-                <a href="{{ route('books.catalog') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-search me-1"></i>
-                    Explorar Catálogo
-                </a>
-            </div>
-
-            @if($favoritos->count() > 0)
-                <div class="row">
-                    @foreach($favoritos as $favorito)
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="book-card">
-                            <div class="book-cover">
-                                @if($favorito->libro->imagen_portada)
-                                    <img src="{{ asset('storage/' . $favorito->libro->imagen_portada) }}" 
-                                         alt="{{ $favorito->libro->titulo }}" class="img-fluid">
-                                @else
-                                    <div class="book-placeholder">
-                                        <i class="fas fa-book fa-3x"></i>
-                                    </div>
-                                @endif
-                                <div class="book-overlay">
-                                    <a href="{{ route('books.show', $favorito->libro) }}" class="btn btn-primary btn-sm me-2">
-                                        <i class="fas fa-eye me-1"></i>Ver Detalles
-                                    </a>
-                                    <button class="btn btn-danger btn-sm toggle-favorite" 
-                                            data-book-id="{{ $favorito->libro->id }}" 
-                                            data-url="{{ route('books.toggle-favorite', $favorito->libro) }}">
-                                        <i class="fas fa-heart"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="book-info">
-                                <h5 class="book-title">{{ $favorito->libro->titulo }}</h5>
-                                <p class="book-author">{{ $favorito->libro->autor->nombre }} {{ $favorito->libro->autor->apellido }}</p>
-                                <div class="book-meta">
-                                    <span class="badge bg-primary">{{ $favorito->libro->categoria->nombre }}</span>
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        Agregado {{ $favorito->created_at->diffForHumans() }}
-                                    </small>
-                                </div>
-                                <div class="book-actions mt-2">
-                                    <button class="btn btn-danger btn-sm toggle-favorite" 
-                                            data-book-id="{{ $favorito->libro->id }}" 
-                                            data-url="{{ route('books.toggle-favorite', $favorito->libro) }}">
-                                        <i class="fas fa-heart me-1"></i>
-                                        Quitar de favoritos
-                                    </button>
-                                </div>
-                            </div>
+        @forelse($favoritos as $favorito)
+            <div class="col-md-3 mb-4">
+                <div class="card h-100 shadow-lg animate__animated animate__fadeInUp">
+                    <div class="card-img-top text-center" style="height: 220px; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                        @if($favorito->libro->imagen_portada)
+                            <img src="{{ $favorito->libro->imagen_portada }}" class="img-fluid book-cover-hover" alt="{{ $favorito->libro->titulo }}" style="max-height: 100%; object-fit: cover; transition: transform 0.3s;">
+                        @else
+                            <i class="fas fa-book fa-3x text-muted"></i>
+                        @endif
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ $favorito->libro->titulo }}</h5>
+                        <p class="card-text text-muted mb-1"><i class="fas fa-user me-1"></i> {{ $favorito->libro->autor->nombre }} {{ $favorito->libro->autor->apellido }}</p>
+                        <div class="mt-auto d-flex gap-2">
+                            <a href="{{ route('books.show', $favorito->libro) }}" class="btn btn-primary btn-sm flex-fill animate__animated animate__fadeInUp">
+                                <i class="fas fa-eye me-1"></i> Ver
+                            </a>
+                            <button class="btn btn-outline-danger btn-sm flex-fill animate__animated animate__fadeInUp" onclick="quitarFavorito({{ $favorito->id }})">
+                                <i class="fas fa-heart-broken"></i> Quitar
+                            </button>
                         </div>
                     </div>
-                    @endforeach
                 </div>
-
-                <!-- Paginación -->
-                <div class="d-flex justify-content-center mt-4">
-                    {{ $favoritos->links() }}
-                </div>
-            @else
-                <div class="text-center py-5">
-                    <div class="empty-state">
-                        <i class="fas fa-heart-broken fa-4x text-muted mb-3"></i>
-                        <h3 class="text-muted">No tienes favoritos aún</h3>
-                        <p class="text-muted mb-4">
-                            Explora nuestro catálogo y marca los libros que te gusten como favoritos.
-                        </p>
-                        <a href="{{ route('books.catalog') }}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-search me-2"></i>
-                            Explorar Catálogo
-                        </a>
-                    </div>
-                </div>
-            @endif
-        </div>
+            </div>
+        @empty
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-heart-broken fa-3x text-muted mb-3"></i>
+                <h4>No tienes libros favoritos aún</h4>
+                <p class="text-muted">Explora el catálogo y añade tus favoritos.</p>
+                <a href="{{ route('books.catalog') }}" class="btn btn-primary">Explorar Catálogo</a>
+            </div>
+        @endforelse
     </div>
 </div>
 
@@ -174,86 +131,26 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Manejar botones de favoritos
-    const favoriteButtons = document.querySelectorAll('.toggle-favorite');
-    
-    favoriteButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const bookId = this.dataset.bookId;
-            const url = this.dataset.url;
-            const bookCard = this.closest('.book-card');
-            
-            // Mostrar loading
-            this.disabled = true;
-            const originalHTML = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
-            
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+function quitarFavorito(id) {
+    Swal.fire('Favorito eliminado', 'El libro ha sido quitado de tus favoritos.', 'info');
+}
+</script>
+@endsection
+
+@section('scripts')
+<script>
+    function refreshFavorites() {
+        fetch(window.location.href + '?ajax=1')
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newGrid = doc.querySelector('.row');
+                if (newGrid) {
+                    document.querySelector('.row').innerHTML = newGrid.innerHTML;
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    if (!data.isFavorite) {
-                        // Si se quitó de favoritos, remover la tarjeta con animación
-                        bookCard.style.transition = 'all 0.3s ease';
-                        bookCard.style.transform = 'scale(0.8)';
-                        bookCard.style.opacity = '0';
-                        
-                        setTimeout(() => {
-                            bookCard.remove();
-                            
-                            // Verificar si no quedan favoritos
-                            const remainingCards = document.querySelectorAll('.book-card');
-                            if (remainingCards.length === 0) {
-                                location.reload(); // Recargar para mostrar estado vacío
-                            }
-                        }, 300);
-                    }
-                    
-                    // Mostrar notificación
-                    showNotification(data.message, 'success');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error al actualizar favoritos', 'error');
-            })
-            .finally(() => {
-                // Restaurar botón
-                this.disabled = false;
-                this.innerHTML = originalHTML;
             });
-        });
-    });
-    
-    // Función para mostrar notificaciones
-    function showNotification(message, type) {
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        notification.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Auto-remover después de 3 segundos
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 3000);
     }
-});
+    setInterval(refreshFavorites, 30000);
 </script>
 @endsection 

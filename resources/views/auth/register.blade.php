@@ -3,7 +3,7 @@
 @section('title', 'Registro - Retrolector')
 
 @section('content')
-<div class="container">
+<div class="container animate__animated animate__fadeInDown">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
             <div class="card shadow-lg border-0 mt-5">
@@ -22,6 +22,13 @@
                                 @endforeach
                             </ul>
                         </div>
+                    @endif
+
+                    @if(session('success'))
+                        <script>Swal.fire('¡Éxito!', '{{ session('success') }}', 'success');</script>
+                    @endif
+                    @if(session('error'))
+                        <script>Swal.fire('Error', '{{ session('error') }}', 'error');</script>
                     @endif
 
                     <form method="POST" action="{{ route('register') }}">
@@ -145,7 +152,7 @@
 
                         <div class="text-center">
                             <p class="mb-0">¿Ya tienes cuenta? 
-                                <a href="{{ route('login.user') }}" class="text-decoration-none">Inicia sesión aquí</a>
+                                <a href="{{ route('login') }}" class="text-decoration-none">Inicia sesión aquí</a>
                             </p>
                         </div>
                     </form>

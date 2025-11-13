@@ -16,7 +16,7 @@ class AdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (!auth()->check()) {
-            return redirect()->route('login.admin')->with('error', 'Debe iniciar sesión como administrador.');
+            return redirect()->route('login')->with('error', 'Debe iniciar sesión como administrador.');
         }
 
         if (!auth()->user()->isAdmin()) {

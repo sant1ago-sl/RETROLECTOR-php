@@ -25,12 +25,21 @@ class Libro extends Model
         'archivo_pdf',
         'stock',
         'ubicacion',
+        'precio_compra_fisica',
+        'precio_compra_online',
+        'precio_prestamo_fisico',
+        'precio_prestamo_online',
+        'preview_limit',
+        'contenido',
+        'descripcion_vista_previa',
     ];
 
     protected $casts = [
-        'anio_publicacion' => 'integer',
-        'paginas' => 'integer',
-        'stock' => 'integer',
+        'precio_compra_fisica' => 'float',
+        'precio_compra_online' => 'float',
+        'precio_prestamo_fisico' => 'float',
+        'precio_prestamo_online' => 'float',
+        'preview_limit' => 'integer',
     ];
 
     // Relaciones
@@ -57,6 +66,16 @@ class Libro extends Model
     public function favoritos(): HasMany
     {
         return $this->hasMany(Favorito::class);
+    }
+
+    public function resenas()
+    {
+        return $this->hasMany(Resena::class);
+    }
+
+    public function resenas_aprobadas()
+    {
+        return $this->hasMany(Resena::class)->where('estado', 'aprobada');
     }
 
     // Métodos de ayuda
@@ -99,5 +118,10 @@ class Libro extends Model
     {
         if (!$user) return false;
         return $this->favoritos()->where('usuario_id', $user->id)->exists();
+    }
+
+    public function getPromedioRatingAttribute()
+    {
+        return $this->resenas()->where('estado', 'aprobada')->avg('calificacion') ?? 0;
     }
 }

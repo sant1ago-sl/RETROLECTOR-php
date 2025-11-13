@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Autor extends Model
 {
-    protected $table = 'autores';
+    protected $table = 'autors';
 
     protected $fillable = [
         'nombre',

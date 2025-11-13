@@ -60,8 +60,20 @@ class AuthController extends Controller
 
         // Intentar autenticar
         if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
-            $request->session()->regenerate();
-            return redirect()->intended(route('user.dashboard'));
+            $usuario = Usuario::where('email', $credentials['email'])->first();
+            // Actualizar último login
+            $usuario->update(['last_login_at' => now()]);
+            // Notificación de bienvenida
+            \App\Models\Notificacion::create([
+                'usuario_id' => $usuario->id,
+                'titulo' => '¡Bienvenido de nuevo!',
+                'mensaje' => 'Has iniciado sesión exitosamente en Retrolector.',
+                'tipo' => 'info',
+                'leida' => false
+            ]);
+            
+            // Redirigir al dashboard de usuario
+            return redirect()->route('user.dashboard')->with('success', '¡Bienvenido de vuelta, ' . $usuario->nombre . '!');
         }
 
         return back()->withErrors([
@@ -94,7 +106,20 @@ class AuthController extends Controller
         // Intentar autenticar
         if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended(route('admin.dashboard'));
+            
+            // Actualizar último login
+            $usuario->update(['last_login_at' => now()]);
+            
+            // Crear notificación de inicio de sesión
+            \App\Models\Notificacion::create([
+                'usuario_id' => $usuario->id,
+                'titulo' => 'Inicio de sesión exitoso',
+                'mensaje' => 'Has iniciado sesión correctamente en Retrolector.',
+                'tipo' => 'success',
+            ]);
+            
+            // Redirigir al dashboard de admin
+            return redirect()->route('admin.dashboard')->with('success', '¡Bienvenido al panel de administración, ' . $usuario->nombre . '!');
         }
 
         return back()->withErrors([
@@ -147,7 +172,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         
-        return redirect()->route('home');
+        return redirect()->route('home')->with('success', 'Has cerrado sesión correctamente.');
     }
 
     /**

@@ -17,6 +17,7 @@ class Compra extends Model
         'libro_id',
         'tipo', // 'fisico' o 'virtual'
         'precio',
+        'modalidad', // 'fisico' o 'online'
         'estado', // 'pendiente', 'completada', 'cancelada'
         'datos_envio', // JSON con información de envío/pago
     ];
@@ -27,9 +28,9 @@ class Compra extends Model
     ];
 
     // Relaciones
-    public function usuario(): BelongsTo
+    public function usuario()
     {
-        return $this->belongsTo(Usuario::class);
+        return $this->belongsTo(\App\Models\Usuario::class, 'usuario_id');
     }
 
     public function libro(): BelongsTo
@@ -94,4 +95,6 @@ class Compra extends Model
     {
         return $this->estado === 'completada';
     }
+
+
 } 

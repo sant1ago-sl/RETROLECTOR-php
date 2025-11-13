@@ -23,6 +23,7 @@ return new class extends Migration
             $table->enum('idioma_preferencia', ['es', 'en'])->default('es');
             $table->enum('tema_preferencia', ['claro', 'oscuro'])->default('claro');
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
+            $table->timestamp('last_login_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();

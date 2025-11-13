@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Autor;
 
 class AutorController extends Controller
 {
@@ -61,5 +62,17 @@ class AutorController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function jsonList()
+    {
+        $autores = Autor::orderBy('nombre')->get(['id', 'nombre', 'apellido']);
+        $data = $autores->map(function($autor) {
+            return [
+                'id' => $autor->id,
+                'nombre' => $autor->nombre . ' ' . $autor->apellido
+            ];
+        });
+        return response()->json($data);
     }
 }

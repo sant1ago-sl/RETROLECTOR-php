@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="{{ $theme ?? session('theme', 'claro') }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="{{ $theme ?? 'claro' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,741 +8,446 @@
     <title>@yield('title', 'Retrolector - Biblioteca Digital')</title>
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
     <!-- Custom CSS -->
     <style>
         :root {
-            /* Colores principales */
-            --primary-color: #1e40af;
-            --secondary-color: #3b82f6;
-            --accent-color: #60a5fa;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            
-            /* Colores de texto */
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-            --text-muted: #9ca3af;
-            --text-white: #ffffff;
-            
-            /* Colores de fondo */
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8fafc;
-            --bg-tertiary: #f1f5f9;
-            --bg-card: #ffffff;
-            
-            /* Colores de borde */
-            --border-color: #e5e7eb;
-            --border-light: #f3f4f6;
-            
-            /* Sombras */
-            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-
-        .oscuro {
-            /* Colores principales */
-            --primary-color: #3b82f6;
-            --secondary-color: #60a5fa;
-            --accent-color: #93c5fd;
-            
-            /* Colores de texto */
-            --text-primary: #f9fafb;
-            --text-secondary: #d1d5db;
-            --text-muted: #9ca3af;
-            --text-white: #ffffff;
-            
-            /* Colores de fondo */
-            --bg-primary: #111827;
-            --bg-secondary: #1f2937;
-            --bg-tertiary: #374151;
-            --bg-card: #1f2937;
-            
-            /* Colores de borde */
-            --border-color: #374151;
-            --border-light: #4b5563;
-            
-            /* Sombras */
-            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            color: var(--text-primary);
-            background-color: var(--bg-secondary);
-            line-height: 1.6;
-            transition: all 0.3s ease;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Playfair Display', serif;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        p, span, div {
-            color: var(--text-primary);
-        }
-
-        .text-muted {
-            color: var(--text-secondary) !important;
-        }
-
-        .text-white {
-            color: var(--text-white) !important;
+            font-family: 'Figtree', sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
         }
 
         .navbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            box-shadow: var(--shadow);
-            padding: 1rem 0;
-            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
         }
 
         .navbar-brand {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
             font-weight: 700;
-            color: var(--text-white) !important;
+            font-size: 1.5rem;
+            color: var(--primary-color) !important;
         }
 
-        .navbar-nav .nav-link {
-            color: rgba(255,255,255,0.9) !important;
+        .nav-link {
             font-weight: 500;
             transition: all 0.3s ease;
-            margin: 0 0.5rem;
+            position: relative;
         }
 
-        .navbar-nav .nav-link:hover {
-            color: var(--text-white) !important;
+        .nav-link:hover {
+            color: var(--accent-color) !important;
             transform: translateY(-2px);
         }
 
-        .dropdown-menu {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .dropdown-item {
-            color: var(--text-primary);
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background-color: var(--accent-color);
             transition: all 0.3s ease;
+            transform: translateX(-50%);
         }
 
-        .dropdown-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
+        .nav-link:hover::after {
+            width: 100%;
         }
 
-        .dropdown-header {
-            color: var(--text-secondary);
-            font-weight: 600;
+        .btn {
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            padding: 0.5rem 1.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            color: var(--text-white);
+            background: linear-gradient(45deg, var(--accent-color), #2980b9);
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
-            color: var(--text-white);
+        .btn-success {
+            background: linear-gradient(45deg, var(--success-color), #229954);
         }
 
-        .btn-outline-primary {
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            background: transparent;
+        .btn-warning {
+            background: linear-gradient(45deg, var(--warning-color), #e67e22);
         }
 
-        .btn-outline-primary:hover {
-            background: var(--primary-color);
-            color: var(--text-white);
-            transform: translateY(-2px);
-        }
-
-        .btn-outline-secondary {
-            border: 2px solid var(--text-secondary);
-            color: var(--text-secondary);
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            background: transparent;
-        }
-
-        .btn-outline-secondary:hover {
-            background: var(--text-secondary);
-            color: var(--text-white);
-            transform: translateY(-2px);
-        }
-
-        .btn-outline-info {
-            border: 2px solid var(--accent-color);
-            color: var(--accent-color);
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            background: transparent;
-        }
-
-        .btn-outline-info:hover {
-            background: var(--accent-color);
-            color: var(--text-white);
-            transform: translateY(-2px);
-        }
-
-        .btn-outline-warning {
-            border: 2px solid var(--warning-color);
-            color: var(--warning-color);
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            background: transparent;
-        }
-
-        .btn-outline-warning:hover {
-            background: var(--warning-color);
-            color: var(--text-white);
-            transform: translateY(-2px);
-        }
-
-        .btn-outline-success {
-            border: 2px solid var(--success-color);
-            color: var(--success-color);
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            background: transparent;
-        }
-
-        .btn-outline-success:hover {
-            background: var(--success-color);
-            color: var(--text-white);
-            transform: translateY(-2px);
+        .btn-danger {
+            background: linear-gradient(45deg, var(--danger-color), #c0392b);
         }
 
         .card {
             border: none;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
-            background: var(--bg-card);
-            color: var(--text-primary);
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
 
         .card-header {
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
+            border-radius: 15px 15px 0 0 !important;
+            border-bottom: none;
+            font-weight: 600;
         }
 
-        .card-body {
-            color: var(--text-primary);
+        .bg-gradient-primary {
+            background: linear-gradient(45deg, var(--accent-color), #2980b9) !important;
         }
 
-        .table {
-            color: var(--text-primary);
+        .bg-gradient-success {
+            background: linear-gradient(45deg, var(--success-color), #229954) !important;
         }
 
-        .table th {
-            color: var(--text-primary);
-            border-bottom-color: var(--border-color);
+        .bg-gradient-warning {
+            background: linear-gradient(45deg, var(--warning-color), #e67e22) !important;
         }
 
-        .table td {
-            color: var(--text-primary);
-            border-bottom-color: var(--border-color);
+        .bg-gradient-danger {
+            background: linear-gradient(45deg, var(--danger-color), #c0392b) !important;
         }
 
-        .form-control {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-radius: 8px;
-            transition: all 0.3s ease;
+        .bg-gradient-info {
+            background: linear-gradient(45deg, #3498db, #2980b9) !important;
         }
 
-        .form-control:focus {
-            background: var(--bg-primary);
-            border-color: var(--primary-color);
-            color: var(--text-primary);
-            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
-        }
-
-        .form-label {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        .input-group-text {
-            background: var(--bg-tertiary);
-            border-color: var(--border-color);
-            color: var(--text-secondary);
-        }
-
-        .alert {
+        .dropdown-menu {
             border: none;
-            border-radius: 8px;
-            color: var(--text-primary);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
         }
 
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-        }
-
-        .alert-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger-color);
-        }
-
-        .alert-warning {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning-color);
-        }
-
-        .alert-info {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--primary-color);
-        }
-
-        .badge {
-            font-weight: 500;
-        }
-
-        .bg-primary {
-            background: var(--primary-color) !important;
-        }
-
-        .bg-secondary {
-            background: var(--secondary-color) !important;
-        }
-
-        .bg-success {
-            background: var(--success-color) !important;
-        }
-
-        .bg-warning {
-            background: var(--warning-color) !important;
-        }
-
-        .bg-danger {
-            background: var(--danger-color) !important;
-        }
-
-        .bg-info {
-            background: var(--accent-color) !important;
-        }
-
-        .text-primary {
-            color: var(--primary-color) !important;
-        }
-
-        .text-secondary {
-            color: var(--text-secondary) !important;
-        }
-
-        .text-success {
-            color: var(--success-color) !important;
-        }
-
-        .text-warning {
-            color: var(--warning-color) !important;
-        }
-
-        .text-danger {
-            color: var(--danger-color) !important;
-        }
-
-        .text-info {
-            color: var(--accent-color) !important;
-        }
-
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: var(--text-white);
-            padding: 4rem 0;
-            margin-top: -1.5rem;
-        }
-
-        .hero-section h1 {
-            color: var(--text-white) !important;
-            font-size: 3.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-section .lead {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.25rem;
-        }
-
-        .features-section {
-            background: var(--bg-card);
-            padding: 4rem 0;
-        }
-
-        .feature-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--accent-color) 0%, var(--secondary-color) 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            color: var(--text-white);
-            font-size: 2rem;
-        }
-
-        .stats-section {
-            background: var(--bg-secondary);
-            padding: 3rem 0;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 2rem 1rem;
-        }
-
-        .stat-item h3 {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .footer {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: var(--text-white);
-            padding: 3rem 0 1rem;
-        }
-
-        .footer h5 {
-            color: var(--text-white);
-            margin-bottom: 1.5rem;
-        }
-
-        .footer a {
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
+        .dropdown-item {
+            border-radius: 10px;
+            margin: 2px 8px;
             transition: all 0.3s ease;
         }
 
-        .footer a:hover {
-            color: var(--text-white);
+        .dropdown-item:hover {
+            background: linear-gradient(45deg, var(--accent-color), #2980b9);
+            color: white;
+            transform: translateX(5px);
         }
 
-        .footer-bottom {
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin-top: 2rem;
-            padding-top: 1rem;
-            text-align: center;
-        }
-
-        .social-links a {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            text-align: center;
-            line-height: 40px;
-            margin: 0 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .social-links a:hover {
-            background: rgba(255,255,255,0.2);
-            transform: translateY(-3px);
-        }
-
-        /* Animaciones */
-        .fade-in-up {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Notificaciones */
         .notification-badge {
             position: absolute;
             top: -5px;
             right: -5px;
             background: var(--danger-color);
-            color: var(--text-white);
+            color: white;
             border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 0.7rem;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            margin: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Footer Styles */
+        footer {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+        }
+
+        footer h5, footer h6 {
+            color: #ecf0f1;
             font-weight: 600;
         }
 
-        .notification-dropdown {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .notification-item {
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--border-color);
+        footer .social-links a {
+            display: inline-block;
+            width: 35px;
+            height: 35px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
             transition: all 0.3s ease;
         }
 
-        .notification-item:hover {
-            background: var(--bg-tertiary);
+        footer .social-links a:hover {
+            background: var(--accent-color);
+            transform: translateY(-3px);
         }
 
-        .notification-item.unread {
-            background: rgba(59, 130, 246, 0.1);
+        footer ul li a {
+            transition: all 0.3s ease;
         }
 
-        .notification-item:last-child {
-            border-bottom: none;
+        footer ul li a:hover {
+            color: var(--accent-color) !important;
+            padding-left: 5px;
+        }
+
+        footer .contact-info p {
+            transition: all 0.3s ease;
+        }
+
+        footer .contact-info p:hover {
+            color: var(--accent-color) !important;
+        }
+
+        /* Dark theme adjustments */
+        [data-bs-theme="dark"] {
+            --primary-color: #ecf0f1;
+            --secondary-color: #bdc3c7;
+            --dark-color: #2c3e50;
+        }
+
+        [data-bs-theme="dark"] body {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        [data-bs-theme="dark"] .navbar {
+            background: rgba(44, 62, 80, 0.95) !important;
+        }
+
+        [data-bs-theme="dark"] .main-content {
+            background: rgba(44, 62, 80, 0.95);
+        }
+
+        [data-bs-theme="dark"] .card {
+            background: rgba(52, 73, 94, 0.9);
+            color: #ecf0f1;
+        }
+
+        [data-bs-theme="dark"] .dropdown-menu {
+            background: rgba(52, 73, 94, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        [data-bs-theme="dark"] .dropdown-item {
+            color: #ecf0f1;
+        }
+
+        [data-bs-theme="dark"] .dropdown-item:hover {
+            background: var(--accent-color);
+            color: white;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .hero-section h1 {
-                font-size: 2.5rem;
+            .main-content {
+                margin: 10px;
+                padding: 20px;
             }
             
-            .stat-item h3 {
-                font-size: 2rem;
+            .navbar-brand {
+                font-size: 1.2rem;
             }
         }
 
-        /* Theme Toggle Button */
-        .theme-toggle {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 6px;
-            padding: 0.5rem 1rem;
-            margin: 0 0.5rem;
-            transition: all 0.3s ease;
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
 
-        .theme-toggle:hover {
-            background: rgba(255,255,255,0.2);
-            color: var(--text-white) !important;
-            transform: translateY(-2px);
-        }
-
-        /* Smooth transitions for theme changes */
-        body, .card, .navbar, .btn, .form-control, .table, .dropdown-menu {
-            transition: all 0.3s ease;
-        }
-
-        /* Language switcher styling */
-        .navbar-nav .dropdown-toggle::after {
-            margin-left: 0.5rem;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 
     @stack('styles')
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm animate__animated animate__fadeInDown" style="backdrop-filter: blur(10px);">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('home') }}">
-                <i class="fas fa-book-open me-2"></i>
-                Retrolector
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('home') }}">
+                <i class="fas fa-book-reader fa-lg text-accent"></i>
+                <span class="fw-bold">Retrolector</span>
             </a>
-            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto align-items-center gap-2">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('home') }}">
-                            <i class="fas fa-home me-1"></i>
-                            {{ __('messages.home') }}
+                        <a class="nav-link d-flex align-items-center gap-1" href="{{ route('home') }}">
+                            <i class="fas fa-home"></i>Inicio
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('books.catalog') }}">
-                            <i class="fas fa-search me-1"></i>
-                            {{ __('messages.books') }}
+                        <a class="nav-link d-flex align-items-center gap-1" href="{{ route('books.catalog') }}">
+                            <i class="fas fa-books"></i>Catálogo
                         </a>
                     </li>
                     @auth
-                        @if(auth()->user()->tipo === 'admin')
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('admin.dashboard') }}">
-                                    <i class="fas fa-tachometer-alt me-1"></i>
-                                    {{ __('messages.dashboard') }}
-                                </a>
-                            </li>
-                        @else
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('user.dashboard') }}">
-                                    <i class="fas fa-user me-1"></i>
-                                    {{ __('messages.dashboard') }}
-                                </a>
-                            </li>
-                        @endif
-                    @endauth
-                </ul>
-                
-                <ul class="navbar-nav">
-                    <!-- Language Switcher -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-globe me-1"></i>
-                            {{ app()->getLocale() === 'es' ? 'ES' : 'EN' }}
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ route('language.switch', 'es') }}">Español</a></li>
-                            <li><a class="dropdown-item" href="{{ route('language.switch', 'en') }}">English</a></li>
-                        </ul>
-                    </li>
-                    
-                    <!-- Theme Switcher -->
-                    <li class="nav-item">
-                        <a class="nav-link theme-toggle" href="{{ route('theme.switch', session('theme', 'claro') === 'claro' ? 'oscuro' : 'claro') }}" title="{{ session('theme', 'claro') === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro' }}">
-                            <i class="fas fa-{{ session('theme', 'claro') === 'claro' ? 'moon' : 'sun' }} me-1"></i>
-                            <span class="d-none d-md-inline">{{ session('theme', 'claro') === 'claro' ? 'Oscuro' : 'Claro' }}</span>
-                        </a>
-                    </li>
-
-                    @auth
-                        <!-- Notificaciones -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-bell me-1"></i>
-                                @php
-                                    $unreadNotifications = auth()->user()->notificaciones()->where('leida', false)->count();
-                                @endphp
-                                @if($unreadNotifications > 0)
-                                    <span class="notification-badge">{{ $unreadNotifications > 9 ? '9+' : $unreadNotifications }}</span>
-                                @endif
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : route('user.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i>Dashboard
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown" style="width: 300px;">
-                                <li><h6 class="dropdown-header">Notificaciones</h6></li>
-                                @forelse(auth()->user()->notificaciones()->latest()->take(5)->get() as $notification)
-                                    <li>
-                                        <div class="notification-item {{ !$notification->leida ? 'unread' : '' }}">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mb-1">{{ $notification->titulo }}</h6>
-                                                    <p class="mb-1 small">{{ $notification->mensaje }}</p>
-                                                    <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
-                                                </div>
-                                                @if(!$notification->leida)
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="markAsRead({{ $notification->id }})">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </li>
-                                @empty
-                                    <li><div class="dropdown-item text-muted">No hay notificaciones</div></li>
-                                @endforelse
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-center" href="#">Ver todas</a></li>
-                            </ul>
                         </li>
                     @endauth
-                    
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="{{ route('admin.compras.index') }}">
+                                <i class="fas fa-shopping-cart"></i>Compras
+                            </a>
+                        </li>
+                    @endif
+                </ul>
+                <ul class="navbar-nav ms-auto align-items-center gap-2">
+                    <!-- Botón de cambio de tema animado -->
+                    <li class="nav-item">
+                        <button id="theme-toggle" class="btn btn-theme-toggle d-flex align-items-center gap-2" aria-label="Cambiar tema">
+                            <span class="theme-icon-light"><i class="fas fa-sun"></i></span>
+                            <span class="theme-icon-dark"><i class="fas fa-moon"></i></span>
+                        </button>
+                    </li>
                     @guest
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('login.user') }}">
-                                <i class="fas fa-sign-in-alt me-1"></i>
-                                {{ __('messages.login') }}
+                            <a class="nav-link d-flex align-items-center gap-1" href="{{ route('login') }}">
+                                <i class="fas fa-sign-in-alt"></i>Iniciar Sesión
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('register') }}">
-                                <i class="fas fa-user-plus me-1"></i>
-                                {{ __('messages.register') }}
+                            <a class="btn btn-primary d-flex align-items-center gap-1" href="{{ route('register') }}">
+                                <i class="fas fa-user-plus"></i>Registrarse
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="{{ route('admin.login') }}" title="Acceso Administrativo">
+                                <i class="fas fa-user-shield"></i><span class="d-none d-md-inline">Admin</span>
                             </a>
                         </li>
                     @else
+                        <!-- Notifications -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-bell"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-badge" style="display: none;">
+                                    0
+                                </span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end" style="width: 350px;">
+                                <h6 class="dropdown-header d-flex justify-content-between align-items-center">
+                                    <span>Notificaciones</span>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="refreshNotificationDropdown()">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </h6>
+                                <div id="notifications-dropdown">
+                                    <div class="dropdown-item text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
+                                    </div>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item text-center" href="{{ auth()->user()->isAdmin() ? route('admin.notifications.index') : route('user.notifications') }}">
+                                    <i class="fas fa-list me-2"></i>Ver todas
+                                </a>
+                            </div>
+                        </li>
+
+                        <!-- User Menu -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle me-1"></i>
-                                {{ auth()->user()->nombre }}
+                                <i class="fas fa-user-circle me-1"></i>{{ auth()->user()->nombre }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                @if(auth()->user()->tipo === 'cliente')
-                                    <li><a class="dropdown-item" href="{{ route('user.dashboard') }}">
-                                        <i class="fas fa-tachometer-alt me-2"></i>Mi Dashboard
+                                @if(auth()->user()->isAdmin())
+                                    <li><h6 class="dropdown-header">Administración</h6></li>
+                                    <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">
+                                        <i class="fas fa-cogs me-2"></i>Panel Admin
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ route('user.favorites') }}">
-                                        <i class="fas fa-heart me-2"></i>Mis Favoritos
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ route('user.reservations') }}">
-                                        <i class="fas fa-clock me-2"></i>Mis Reservas
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ route('user.loans') }}">
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                            </button>
+                                        </form>
+                                    </li>
+                                @else
+                                    <li><h6 class="dropdown-header">Mi Cuenta</h6></li>
+                                <li><a class="dropdown-item" href="{{ route('user.dashboard') }}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('user.profile') }}">
+                                        <i class="fas fa-user me-2"></i>Mi Perfil
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('user.loans') }}">
                                         <i class="fas fa-book me-2"></i>Mis Préstamos
                                     </a></li>
-                                @elseif(auth()->user()->tipo === 'admin')
-                                    <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">
-                                        <i class="fas fa-tachometer-alt me-2"></i>Panel Admin
-                                    </a></li>
-                                @endif
+                                    <li><a class="dropdown-item" href="{{ route('user.reservations') }}">
+                                        <i class="fas fa-calendar-check me-2"></i>Mis Reservas
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('user.favorites') }}">
+                                        <i class="fas fa-heart me-2"></i>Mis Favoritos
+                                </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                        </button>
-                                    </form>
-                                </li>
+                                    <li>
+                                        <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                            </button>
+                                        </form>
+                                    </li>
+                                @endif
                             </ul>
                         </li>
                     @endguest
@@ -752,115 +457,377 @@
     </nav>
 
     <!-- Main Content -->
-    <main style="margin-top: 80px;">
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 90px; right: 20px; z-index: 9999; min-width: 300px;">
-                <i class="fas fa-check-circle me-2"></i>
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show position-fixed" style="top: 90px; right: 20px; z-index: 9999; min-width: 300px;">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
+    <div class="main-content" style="margin-top: 80px;">
         @yield('content')
-    </main>
+                </div>
 
     <!-- Footer -->
-    <footer class="footer mt-5">
+    <footer class="footer-modern bg-gradient-footer text-light py-5 mt-5 animate__animated animate__fadeInUp mt-auto">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-4 mb-4">
-                    <h5>Retrolector</h5>
-                    <p>Tu biblioteca digital moderna con acceso a miles de libros. Descubre, presta y disfruta de la lectura.</p>
-                    <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+            <div class="row gy-4 align-items-center">
+                <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
+                    <h5 class="mb-3 d-flex align-items-center gap-2">
+                        <i class="fas fa-book-open fa-lg text-accent"></i>Retrolector
+                    </h5>
+                    <p class="text-footer-muted">
+                        Tu biblioteca digital moderna. Accede a miles de libros, gestiona préstamos y descubre nuevas lecturas.
+                    </p>
+                    <div class="social-links mt-3">
+                        <a href="#" class="social-icon animate__animated animate__pulse animate__infinite"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-icon animate__animated animate__pulse animate__infinite animate__delay-1s"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-icon animate__animated animate__pulse animate__infinite animate__delay-2s"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-icon animate__animated animate__pulse animate__infinite animate__delay-3s"><i class="fab fa-linkedin-in"></i></a>
                     </div>
                 </div>
-                <div class="col-lg-2 col-md-6 mb-4">
-                    <h5>Enlaces</h5>
+                <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+                    <h6 class="mb-3">Enlaces Rápidos</h6>
                     <ul class="list-unstyled">
-                        <li><a href="{{ route('home') }}">Inicio</a></li>
-                        <li><a href="{{ route('books.catalog') }}">Catálogo</a></li>
-                        <li><a href="#">Acerca de</a></li>
-                        <li><a href="#">Contacto</a></li>
+                        <li><a href="{{ route('home') }}" class="footer-link"><i class="fas fa-home me-1"></i>Inicio</a></li>
+                        <li><a href="{{ route('books.catalog') }}" class="footer-link"><i class="fas fa-search me-1"></i>Catálogo</a></li>
+                        <li><a href="{{ route('books.recommendations') }}" class="footer-link"><i class="fas fa-star me-1"></i>Recomendaciones</a></li>
+                        <li><a href="{{ route('books.reading-clubs') }}" class="footer-link"><i class="fas fa-users me-1"></i>Clubes de Lectura</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Servicios</h5>
+                <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+                    <h6 class="mb-3">Servicios</h6>
                     <ul class="list-unstyled">
-                        <li><a href="#">Préstamos</a></li>
-                        <li><a href="#">Reservas</a></li>
-                        <li><a href="#">Favoritos</a></li>
-                        <li><a href="#">Notificaciones</a></li>
+                        <li><a href="#" class="footer-link"><i class="fas fa-book me-1"></i>Préstamos</a></li>
+                        <li><a href="#" class="footer-link"><i class="fas fa-calendar-check me-1"></i>Reservas</a></li>
+                        <li><a href="#" class="footer-link"><i class="fas fa-heart me-1"></i>Favoritos</a></li>
+                        <li><a href="#" class="footer-link"><i class="fas fa-chart-line me-1"></i>Analíticas</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 mb-4">
-                    <h5>Contacto</h5>
-                    <p><i class="fas fa-envelope me-2"></i>info@retrolector.com</p>
-                    <p><i class="fas fa-phone me-2"></i>+1 234 567 890</p>
-                    <p><i class="fas fa-map-marker-alt me-2"></i>Biblioteca Digital</p>
+                <div class="col-lg-4 col-md-6">
+                    <h6 class="mb-3">Contacto</h6>
+                    <div class="contact-info">
+                        <p class="mb-2"><i class="fas fa-map-marker-alt me-2"></i>Av. Biblioteca 123, Ciudad</p>
+                        <p class="mb-2"><i class="fas fa-phone me-2"></i>+51 987 654 321</p>
+                        <p class="mb-2"><i class="fas fa-envelope me-2"></i>info@retrolector.com</p>
+                        <p class="mb-2"><i class="fas fa-clock me-2"></i>Lun - Vie: 8:00 - 20:00</p>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; {{ date('Y') }} Retrolector. Todos los derechos reservados.</p>
+            </div>
+            <hr class="my-4 bg-secondary">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                    <p class="mb-0 text-footer-muted">&copy; {{ date('Y') }} Retrolector. Todos los derechos reservados. santiago</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                    <a href="#" class="footer-link me-3">Política de Privacidad</a>
+                    <a href="#" class="footer-link me-3">Términos de Uso</a>
+                    <a href="#" class="footer-link">Ayuda</a>
+                </div>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap Bundle JS (incluye Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Custom JS -->
     <script>
-        // Auto-hide alerts after 5 seconds
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            });
-        }, 5000);
-
-        // Mark notification as read
-        function markAsRead(notificationId) {
-            fetch(`/notifications/${notificationId}/mark-read`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        // Add fade-in animation to cards
+        // Auto-hide alerts
         document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.classList.add('fade-in-up');
+                const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+            }, 5000);
+            });
+        });
+
+        // Confirm logout
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutForm = document.querySelector('form[action*="logout"]');
+            if (logoutForm) {
+                logoutForm.addEventListener('submit', function(e) {
+                    if (!confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                    e.preventDefault();
+                    }
+                        });
+                    }
+            });
+
+        // Loading states for buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function() {
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        const originalText = submitBtn.innerHTML;
+                        submitBtn.innerHTML = '<span class="loading"></span> Procesando...';
+                        submitBtn.disabled = true;
+                        
+                        // Re-enable after 10 seconds as fallback
+                        setTimeout(() => {
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        }, 10000);
+                    }
+                });
             });
         });
     </script>
 
     @stack('scripts')
+    <style>
+        .navbar, .footer-modern {
+            transition: background 0.4s, color 0.4s;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+        }
+        .footer-modern {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+        }
+        .footer-link {
+            color: #bfc9d1;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s, padding-left 0.3s;
+        }
+        .footer-link:hover {
+            color: #fff;
+            padding-left: 8px;
+        }
+        .text-footer-muted {
+            color: #bfc9d1;
+        }
+        .social-icon {
+            display: inline-block;
+            width: 38px;
+            height: 38px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 38px;
+            color: #fff;
+            font-size: 1.2rem;
+            margin-right: 8px;
+            transition: background 0.3s, transform 0.3s;
+        }
+        .social-icon:hover {
+            background: #3498db;
+            color: #fff;
+            transform: translateY(-4px) scale(1.1);
+        }
+        .btn-theme-toggle {
+            background: linear-gradient(45deg, #f5f6fa, #d6e4ff);
+            border: none;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(52,152,219,0.08);
+            position: relative;
+            transition: background 0.3s, box-shadow 0.3s;
+            overflow: hidden;
+        }
+        .btn-theme-toggle:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #3498db44;
+        }
+        .theme-icon-light, .theme-icon-dark {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        [data-bs-theme="dark"] .navbar {
+            background: rgba(44,62,80,0.98) !important;
+        }
+        [data-bs-theme="dark"] .footer-modern {
+            background: linear-gradient(135deg, #23272f 0%, #181c22 100%) !important;
+        }
+        [data-bs-theme="dark"] .footer-link, [data-bs-theme="dark"] .text-footer-muted {
+            color: #8b9bb4;
+        }
+        [data-bs-theme="dark"] .footer-link:hover {
+            color: #fff;
+        }
+        [data-bs-theme="dark"] .social-icon {
+            background: rgba(44,62,80,0.5);
+            color: #fff;
+        }
+        [data-bs-theme="dark"] .social-icon:hover {
+            background: #2980b9;
+        }
+        /* Animación de icono de tema */
+        [data-bs-theme="light"] .theme-icon-light {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        [data-bs-theme="light"] .theme-icon-dark {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+        }
+        [data-bs-theme="dark"] .theme-icon-light {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+        }
+        [data-bs-theme="dark"] .theme-icon-dark {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    </style>
+    <script>
+        // Botón de cambio de tema animado
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            if(themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-bs-theme', newTheme);
+                    fetch(`{{ url('theme/change') }}/${newTheme}`);
+                });
+            }
+        });
+    </script>
+    <!-- Scripts para notificaciones en tiempo real -->
+    <script>
+        let notificationRefreshInterval;
+
+        // Inicializar notificaciones
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshNotificationDropdown();
+            // Actualizar cada 30 segundos
+            notificationRefreshInterval = setInterval(refreshNotificationDropdown, 30000);
+        });
+
+        // Refrescar dropdown de notificaciones
+        function refreshNotificationDropdown() {
+            const dropdown = document.getElementById('notifications-dropdown');
+            const badge = document.getElementById('notification-badge');
+            
+            @if(auth()->check())
+                fetch('{{ auth()->user()->isAdmin() ? route("admin.notifications.get-unread") : route("user.notifications.unread") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Actualizar contador
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.style.display = 'block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+
+                        // Actualizar contenido del dropdown
+                        if (data.notificaciones && data.notificaciones.length > 0) {
+                            let html = '';
+                            data.notificaciones.forEach(notif => {
+                                html += `
+                                    <div class="dropdown-item d-flex align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-1">
+                                                <span class="badge bg-${notif.tipo} me-2">${notif.tipo}</span>
+                                                <strong class="small">${notif.titulo}</strong>
+                                            </div>
+                                            <div class="text-muted small">${notif.mensaje}</div>
+                                            <div class="text-muted small">${new Date(notif.created_at).toLocaleString()}</div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-success ms-2" onclick="markNotificationAsRead(${notif.id})" title="Marcar como leída">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                `;
+                            });
+                            dropdown.innerHTML = html;
+                        } else {
+                            dropdown.innerHTML = '<div class="dropdown-item text-center text-muted">No hay notificaciones nuevas</div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cargando notificaciones:', error);
+                        dropdown.innerHTML = '<div class="dropdown-item text-center text-danger">Error al cargar notificaciones</div>';
+                    });
+            @else
+                // No hacer nada si no hay usuario autenticado
+                return;
+            @endif
+        }
+
+        // Marcar notificación como leída
+        function markNotificationAsRead(id) {
+            fetch(`/user/notifications/${id}/mark-read`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    refreshNotificationDropdown();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Limpiar intervalo al salir
+        window.addEventListener('beforeunload', function() {
+            if (notificationRefreshInterval) clearInterval(notificationRefreshInterval);
+        });
+    </script>
+    @auth
+        @if(auth()->user()->isAdmin())
+            <a href="{{ route('admin.books.create') }}" class="btn btn-primary btn-lg shadow-lg rounded-circle position-fixed" style="bottom: 40px; right: 40px; z-index: 1050; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 2rem; animation: bounceIn 1s;">
+                <i class="fas fa-plus"></i>
+            </a>
+            <style>
+                @keyframes bounceIn {
+                    0% { transform: scale(0.5); opacity: 0; }
+                    60% { transform: scale(1.2); opacity: 1; }
+                    100% { transform: scale(1); }
+                }
+                .btn[style*="position: fixed"]:hover {
+                    background: linear-gradient(45deg, #f39c12, #e67e22);
+                    color: #fff;
+                    transform: scale(1.1);
+                }
+            </style>
+        @endif
+    @endauth
+    <!-- Toasts de mensajes -->
+    <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 2000;">
+        @if(session('success'))
+            <div class="toast align-items-center text-bg-success border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="toast align-items-center text-bg-danger border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-times-circle me-2"></i>{{ session('error') }}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+            toastElList.forEach(function (toastEl) {
+                var toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            });
+        });
+    </script>
 </body>
 </html> 

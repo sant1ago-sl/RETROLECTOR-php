@@ -25,11 +25,14 @@ return new class extends Migration
             $table->unsignedBigInteger('categoria_id');
             $table->string('imagen_portada')->nullable();
             $table->string('archivo_pdf')->nullable();
+            $table->longText('contenido')->nullable();
+            $table->integer('preview_limit')->default(1000); // Por defecto 1000 caracteres gratuitos
             $table->integer('stock')->default(1);
             $table->string('ubicacion', 100)->nullable();
+            $table->unsignedBigInteger('creado_por')->nullable();
             $table->timestamps();
 
-            $table->foreign('autor_id')->references('id')->on('autores')->onDelete('cascade');
+            $table->foreign('autor_id')->references('id')->on('autors')->onDelete('cascade');
             $table->foreign('categoria_id')->references('id')->on('categorias')->onDelete('cascade');
         });
     }
